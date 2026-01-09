@@ -1,0 +1,204 @@
+%------------------------
+% Resume Template
+% Author : Debdip Mukherjee
+% Github : https://github.com/DebdipWritesCode
+% License : MIT
+%------------------------
+
+\documentclass[a4paper,20pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[pdftex]{hyperref}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.530in}
+\addtolength{\evensidemargin}{-0.375in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.45in}
+\addtolength{\textheight}{1in}
+
+\urlstyle{rm}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-10pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[2]{
+  \item\small{
+    \textbf{#1}{ #2 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeItemWithoutTitle}[1]{
+  \item\small{
+    {\vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{#3} & \textit{#4} \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+
+\newcommand{\resumeSubItem}[2]{\resumeItem{#1}{#2}\vspace{-3pt}}
+
+\renewcommand{\labelitemii}{$\circ$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-----------------------------
+%%%%%%  CV STARTS HERE  %%%%%%
+
+\begin{document}
+
+%----------HEADING-----------------
+\begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+  \textbf{{\LARGE John Doe}} & Email: \href{mailto:john.doe@example.com}{john.doe@example.com}\\
+  \href{https://www.linkedin.com/in/johndoe}{LinkedIn: linkedin.com/in/johndoe} & Mobile:~~~+1-234-567-8900 \\
+  \href{https://github.com/johndoe}{GitHub: ~~github.com/johndoe} \\
+  
+\end{tabular*}
+
+%-----------EDUCATION-----------------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {University of Technology}{City, State}
+      {Bachelor of Science - Computer Science;  GPA: 3.8/4.0}{Aug 2020 - May 2024}
+      {\scriptsize \textit{ \footnotesize{\newline{}\textbf{Courses:} Data Structures, Algorithms, Database Systems, Software Engineering, Machine Learning, Web Development}}}
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------------
+\vspace{-5pt}
+\section{Experience}
+  \resumeSubHeadingListStart
+\vspace{3pt}
+        \resumeSubheading
+  {Tech Solutions Inc.}{San Francisco, CA}
+  {Software Engineer Intern — Full-time}{Jun 2023 -- Aug 2023}
+    \resumeItemListStart
+        \resumeItem{Web Application Development}
+          {Developed and maintained responsive web applications using React and Node.js, improving user engagement by 30\% and reducing page load time by 40\%.}
+        \resumeItem{API Integration}
+          {Integrated third-party APIs and RESTful services, enabling seamless data exchange between frontend and backend systems.}
+      \resumeItemListEnd
+\resumeSubheading
+  {StartupXYZ}{Remote}
+  {Frontend Developer — Part-time}{Jan 2023 -- May 2023}
+    \resumeItemListStart
+        \resumeItem{UI/UX Implementation}
+          {Designed and implemented user interfaces using modern CSS frameworks and JavaScript libraries, enhancing user experience and accessibility.}
+        \resumeItem{Performance Optimization}
+          {Optimized application performance through code splitting and lazy loading, resulting in 25\% faster initial load times.}
+      \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------------
+\vspace{3pt}
+\section{Projects}
+
+\resumeSubHeadingListStart
+    \resumeSubheading{E-Commerce Platform — Full-Stack Web Application}
+    {Jan 2024 - Apr 2024}{Tech: React, Node.js, Express, MongoDB, Stripe API, JWT}
+    {\href{https://github.com/johndoe/ecommerce-platform}{GitHub Link}}
+    \resumeItemListStart
+        \resumeItem{}
+          {Built a complete e-commerce platform with user authentication, product catalog, shopping cart, and payment integration using Stripe API.}
+          \resumeItem{}
+          {Implemented RESTful API endpoints for product management, order processing, and user management, handling 1000+ concurrent users.}
+          \resumeItem{}{Designed responsive UI components with React and Material-UI, ensuring cross-browser compatibility and mobile responsiveness.}
+      \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\resumeSubHeadingListStart
+    \resumeSubheading{Task Management App — Productivity Tool}
+    {Sep 2023 - Dec 2023}{Tech: Python, Django, PostgreSQL, React, Redux, Docker}
+    {\href{https://github.com/johndoe/task-manager}{GitHub Link}}
+    \resumeItemListStart
+        \resumeItem{}
+          {Developed a collaborative task management application with real-time updates, team collaboration features, and deadline tracking.}
+          \resumeItem{}
+          {Implemented user roles and permissions system, enabling teams to manage projects with granular access control.}
+          \resumeItem{}{Containerized the application using Docker, simplifying deployment and ensuring consistent environments across development and production.}
+      \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+%-----------SKILLS SUMMARY-----------------
+\vspace{-5pt}
+\section{Skills Summary}
+	\resumeSubHeadingListStart
+	\resumeSubItem{Languages}{~~~~~~Python, JavaScript, TypeScript, Java, C++, SQL, HTML, CSS}
+	\resumeSubItem{Frameworks}{~~~~React, Node.js, Express, Django, Flask, Angular, Vue.js}
+	\resumeSubItem{Tools}{~~~~~~~~~~~~~~Git, Docker, AWS, MongoDB, PostgreSQL, Redis, Jenkins, Postman}
+	\resumeSubItem{Soft Skills}{~~~~~~~Team Collaboration, Problem Solving, Communication, Agile Methodology}
+\resumeSubHeadingListEnd
+
+%-----------CERTIFICATIONS-----------------
+\vspace{-5pt}
+\section{Certifications}
+\resumeSubHeadingListStart
+    \resumeSubheading{AWS Certified Solutions Architect}
+    {Mar 2024 - Present}{Issuing Organization: Amazon Web Services \hspace{18pt}Platform: AWS}
+    {\href{https://www.aws.amazon.com/certification}{Certification Link}}
+\resumeSubHeadingListEnd
+\resumeSubHeadingListStart
+    \resumeSubheading{Full Stack Web Development Bootcamp}
+    {Jan 2023 - Jun 2023}{Instructor: Tech Academy \hspace{48pt}Platform: Online}
+    {\href{https://www.example.com/certificate}{Certification Link}}
+\resumeSubHeadingListEnd
+\vspace{-1pt}
+
+%-----------AWARDS-----------------
+\section{Honors and Awards}
+\begin{description}[font=$\bullet$]
+\item {Dean's List for Academic Excellence \hfill \raggedleft Fall 2023, Spring 2024}
+\vspace{-5pt}
+\item {First Place at University Hackathon 2023 \hfill \raggedleft Nov 2023}
+\vspace{-5pt}
+\item {Outstanding Student Award in Computer Science \hfill \raggedleft May 2023}
+\vspace{-5pt}
+\end{description}
+
+%-----------VOLUNTEER EXPERIENCE-----------------
+\vspace{-5pt}
+\section{Volunteer Experience}
+  \resumeSubHeadingListStart
+	\resumeSubheading
+    {Code for Good — Non-Profit Organization}{City, State}
+    {Volunteer Web Developer — Developed websites for local non-profits and organized coding workshops for underprivileged students.}{Sep 2022 - Present}
+\vspace{5pt}
+    \resumeSubheading
+    {Tech Mentorship Program — Community Center}{City, State}
+    {Mentor — Provided guidance and technical support to students learning web development and programming fundamentals.}{Jan 2023 - Dec 2023}
+
+\resumeSubHeadingListEnd
+
+\end{document}
