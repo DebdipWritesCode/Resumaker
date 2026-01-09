@@ -8,6 +8,7 @@ class EducationCreate(BaseModel):
     location: str
     degree: str
     gpa: Optional[float] = None
+    max_gpa: Optional[float] = None
     start_date: str
     end_date: str  # Can be "Present" or date
     courses: Optional[List[str]] = None
@@ -17,6 +18,7 @@ class EducationUpdate(BaseModel):
     location: Optional[str] = None
     degree: Optional[str] = None
     gpa: Optional[float] = None
+    max_gpa: Optional[float] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     courses: Optional[List[str]] = None
@@ -29,6 +31,7 @@ class EducationResponse(BaseModel):
     location: str
     degree: str
     gpa: Optional[float] = None
+    max_gpa: Optional[float] = None
     start_date: str
     end_date: str
     courses: Optional[List[str]] = None

@@ -14,6 +14,7 @@ import History from '@/pages/History'
 import MyProfile from '@/pages/MyProfile'
 import ResumeTips from '@/pages/ResumeTips'
 import Heading from '@/pages/Heading'
+import Education from '@/pages/Education'
 
 const Router = () => {
   return (
@@ -33,6 +34,7 @@ const Router = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/my-elements" element={<MyElements />} />
         <Route path="/my-elements/heading" element={<Heading />} />
+        <Route path="/my-elements/education" element={<Education />} />
         <Route path="/make-resume" element={<MakeResume />} />
         <Route path="/history" element={<History />} />
         <Route path="/my-profile" element={<MyProfile />} />

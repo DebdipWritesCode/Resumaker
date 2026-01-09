@@ -84,8 +84,8 @@ const MyElements = () => {
     // Navigate to the specific element section
     const routes: Record<string, string> = {
       heading: '/my-elements/heading',
+      education: '/my-elements/education',
       // TODO: Add routes for other elements as they are implemented
-      // education: '/my-elements/education',
       // experience: '/my-elements/experience',
       // projects: '/my-elements/projects',
       // skills: '/my-elements/skills',
