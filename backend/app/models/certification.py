@@ -5,14 +5,16 @@ from datetime import datetime
 # Request Models
 class CertificationCreate(BaseModel):
     title: str
-    date_range: str
+    start_date: str
+    end_date: str  # Can be "Present" or date
     instructor: Optional[str] = None
     platform: str
     certification_link: Optional[str] = None
 
 class CertificationUpdate(BaseModel):
     title: Optional[str] = None
-    date_range: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
     instructor: Optional[str] = None
     platform: Optional[str] = None
     certification_link: Optional[str] = None
@@ -22,7 +24,8 @@ class CertificationResponse(BaseModel):
     id: str
     user_id: str
     title: str
-    date_range: str
+    start_date: str
+    end_date: str
     instructor: Optional[str] = None
     platform: str
     certification_link: Optional[str] = None

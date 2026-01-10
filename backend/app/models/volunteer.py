@@ -4,6 +4,7 @@ from datetime import datetime
 
 # Request Models
 class VolunteerCreate(BaseModel):
+    position: str
     organization: str
     location: str
     description: str
@@ -11,6 +12,7 @@ class VolunteerCreate(BaseModel):
     end_date: str  # Can be "Present" or date
 
 class VolunteerUpdate(BaseModel):
+    position: Optional[str] = None
     organization: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
@@ -21,6 +23,7 @@ class VolunteerUpdate(BaseModel):
 class VolunteerResponse(BaseModel):
     id: str
     user_id: str
+    position: str
     organization: str
     location: str
     description: str

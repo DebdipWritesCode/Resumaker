@@ -5,7 +5,7 @@ from datetime import datetime
 # Request Models
 class AwardCreate(BaseModel):
     title: str
-    date: str
+    date: str # Can be month and year eg "Jan 2025"
 
 class AwardUpdate(BaseModel):
     title: Optional[str] = None

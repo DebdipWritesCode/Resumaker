@@ -18,6 +18,8 @@ import Education from '@/pages/Education'
 import Experience from '@/pages/Experience'
 import Projects from '@/pages/Projects'
 import Skills from '@/pages/Skills'
+import Certifications from '@/pages/Certifications'
+import Awards from '@/pages/Awards'
 
 const Router = () => {
   return (
@@ -41,6 +43,8 @@ const Router = () => {
         <Route path="/my-elements/experience" element={<Experience />} />
         <Route path="/my-elements/projects" element={<Projects />} />
         <Route path="/my-elements/skills" element={<Skills />} />
+        <Route path="/my-elements/certifications" element={<Certifications />} />
+        <Route path="/my-elements/awards" element={<Awards />} />
         <Route path="/make-resume" element={<MakeResume />} />
         <Route path="/history" element={<History />} />
         <Route path="/my-profile" element={<MyProfile />} />

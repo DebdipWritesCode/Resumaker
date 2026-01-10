@@ -88,9 +88,9 @@ const MyElements = () => {
       experience: '/my-elements/experience',
       projects: '/my-elements/projects',
       skills: '/my-elements/skills',
+      certifications: '/my-elements/certifications',
+      awards: '/my-elements/awards',
       // TODO: Add routes for other elements as they are implemented
-      // certifications: '/my-elements/certifications',
-      // awards: '/my-elements/awards',
       // volunteer: '/my-elements/volunteer',
     }
 
