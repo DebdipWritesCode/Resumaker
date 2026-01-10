@@ -29,6 +29,8 @@ export interface CertificationUpdate {
   instructor?: string | null
   platform?: string
   certification_link?: string | null
+  set_instructor?: boolean
+  set_certification_link?: boolean
 }
 
 export const certificationApi = {

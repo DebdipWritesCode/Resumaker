@@ -18,10 +18,13 @@ class EducationUpdate(BaseModel):
     location: Optional[str] = None
     degree: Optional[str] = None
     gpa: Optional[float] = None
+    set_gpa: Optional[bool] = None
     max_gpa: Optional[float] = None
+    set_max_gpa: Optional[bool] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     courses: Optional[List[str]] = None
+    set_courses: Optional[bool] = None
 
 # Response Models
 class EducationResponse(BaseModel):

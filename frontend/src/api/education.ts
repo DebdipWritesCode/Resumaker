@@ -35,6 +35,9 @@ export interface EducationUpdate {
   start_date?: string
   end_date?: string
   courses?: string[] | null
+  set_gpa?: boolean
+  set_max_gpa?: boolean
+  set_courses?: boolean
 }
 
 export const educationApi = {

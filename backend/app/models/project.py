@@ -18,8 +18,11 @@ class ProjectUpdate(BaseModel):
     end_date: Optional[str] = None
     tech_stack: Optional[str] = None
     link: Optional[str] = None
+    set_link: Optional[bool] = None
     link_label: Optional[str] = None
+    set_link_label: Optional[bool] = None
     subpoints: Optional[List[str]] = None
+    set_subpoints: Optional[bool] = None
 
 # Response Models
 class ProjectResponse(BaseModel):

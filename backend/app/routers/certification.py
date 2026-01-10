@@ -143,11 +143,11 @@ async def update_certification(
         update_data["start_date"] = certification_data.start_date
     if certification_data.end_date is not None:
         update_data["end_date"] = certification_data.end_date
-    if certification_data.instructor is not None:
+    if certification_data.set_instructor or certification_data.instructor is not None:
         update_data["instructor"] = certification_data.instructor
     if certification_data.platform is not None:
         update_data["platform"] = certification_data.platform
-    if certification_data.certification_link is not None:
+    if certification_data.set_certification_link or certification_data.certification_link is not None:
         update_data["certification_link"] = certification_data.certification_link
     
     await certifications_collection.update_one(

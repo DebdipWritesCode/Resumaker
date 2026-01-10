@@ -90,6 +90,7 @@ const Certifications = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingCertificationId, setEditingCertificationId] = useState<number | null>(null)
+  const [originalCertification, setOriginalCertification] = useState<CertificationResponse | null>(null)
 
   useEffect(() => {
     dispatch(fetchCertification())
@@ -109,6 +110,7 @@ const Certifications = () => {
 
   const handleOpenDialog = () => {
     setEditingCertificationId(null)
+    setOriginalCertification(null)
     form.reset({
       title: '',
       startDate: '',
@@ -123,6 +125,7 @@ const Certifications = () => {
   const handleEditCertification = (certificationItem: CertificationResponse) => {
     try {
       setEditingCertificationId(certificationItem.id)
+      setOriginalCertification(certificationItem)
       form.reset({
         title: certificationItem.title,
         startDate: certificationItem.start_date,
@@ -155,13 +158,28 @@ const Certifications = () => {
   const onSubmit = async (data: CertificationFormValues) => {
     setIsSubmitting(true)
     try {
-      const payload = {
+      const instructorValue = data.instructor && data.instructor !== '' ? data.instructor : null
+      const certificationLinkValue = data.certificationLink && data.certificationLink !== '' ? data.certificationLink : null
+
+      const payload: any = {
         title: data.title,
         start_date: data.startDate,
         end_date: data.endDate,
-        instructor: data.instructor && data.instructor !== '' ? data.instructor : null,
         platform: data.platform,
-        certification_link: data.certificationLink && data.certificationLink !== '' ? data.certificationLink : null,
+        instructor: instructorValue,
+        certification_link: certificationLinkValue,
+      }
+
+      // For updates, check if optional fields are being cleared
+      if (editingCertificationId !== null && originalCertification) {
+        // Check if instructor is being cleared (had value, now empty)
+        if (originalCertification.instructor && !instructorValue) {
+          payload.set_instructor = true
+        }
+        // Check if certification_link is being cleared (had value, now empty)
+        if (originalCertification.certification_link && !certificationLinkValue) {
+          payload.set_certification_link = true
+        }
       }
 
       if (editingCertificationId !== null) {
@@ -179,6 +197,7 @@ const Certifications = () => {
 
       setIsDialogOpen(false)
       setEditingCertificationId(null)
+      setOriginalCertification(null)
       form.reset()
       dispatch(fetchCertification())
     } catch (err: any) {
@@ -342,6 +361,7 @@ const Certifications = () => {
           setIsDialogOpen(open)
           if (!open) {
             setEditingCertificationId(null)
+            setOriginalCertification(null)
             form.reset()
           }
         }}

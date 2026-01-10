@@ -16,8 +16,10 @@ class CertificationUpdate(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     instructor: Optional[str] = None
+    set_instructor: Optional[bool] = None
     platform: Optional[str] = None
     certification_link: Optional[str] = None
+    set_certification_link: Optional[bool] = None
 
 # Response Models
 class CertificationResponse(BaseModel):

@@ -113,6 +113,7 @@ const Projects = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null)
+  const [originalProject, setOriginalProject] = useState<ProjectResponse | null>(null)
 
   useEffect(() => {
     dispatch(fetchProject())
@@ -133,6 +134,7 @@ const Projects = () => {
 
   const handleOpenDialog = () => {
     setEditingProjectId(null)
+    setOriginalProject(null)
     form.reset({
       name: '',
       startDate: '',
@@ -148,6 +150,7 @@ const Projects = () => {
   const handleEditProject = (projectItem: ProjectResponse) => {
     try {
       setEditingProjectId(projectItem.id)
+      setOriginalProject(projectItem)
       form.reset({
         name: projectItem.name,
         startDate: projectItem.start_date,
@@ -197,14 +200,33 @@ const Projects = () => {
         ? data.subpoints.map((subpoint) => escapeSpecialSymbols(subpoint.text))
         : []
 
-      const payload = {
+      const linkValue = data.link && data.link !== '' ? data.link : null
+      const linkLabelValue = data.linkLabel && data.linkLabel !== '' ? data.linkLabel : null
+
+      const payload: any = {
         name: data.name,
         start_date: data.startDate,
         end_date: data.endDate,
         tech_stack: data.techStack,
-        link: data.link && data.link !== '' ? data.link : null,
-        link_label: data.linkLabel && data.linkLabel !== '' ? data.linkLabel : null,
+        link: linkValue,
+        link_label: linkLabelValue,
         subpoints: subpointsArray,
+      }
+
+      // For updates, check if optional fields are being cleared
+      if (editingProjectId !== null && originalProject) {
+        // Check if link is being cleared (had value, now empty)
+        if (originalProject.link && !linkValue) {
+          payload.set_link = true
+        }
+        // Check if link_label is being cleared (had value, now empty)
+        if (originalProject.link_label && !linkLabelValue) {
+          payload.set_link_label = true
+        }
+        // Check if subpoints is being cleared (had value, now empty)
+        if (originalProject.subpoints && originalProject.subpoints.length > 0 && subpointsArray.length === 0) {
+          payload.set_subpoints = true
+        }
       }
 
       if (editingProjectId !== null) {
@@ -222,6 +244,7 @@ const Projects = () => {
 
       setIsDialogOpen(false)
       setEditingProjectId(null)
+      setOriginalProject(null)
       form.reset()
       dispatch(fetchProject())
     } catch (err: any) {
@@ -424,6 +447,7 @@ const Projects = () => {
           setIsDialogOpen(open)
           if (!open) {
             setEditingProjectId(null)
+            setOriginalProject(null)
             form.reset()
           }
         }}
@@ -675,6 +699,7 @@ const Projects = () => {
                   onClick={() => {
                     setIsDialogOpen(false)
                     setEditingProjectId(null)
+                    setOriginalProject(null)
                     form.reset()
                   }}
                   className="w-full sm:w-auto"

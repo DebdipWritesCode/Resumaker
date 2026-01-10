@@ -32,6 +32,9 @@ export interface ProjectUpdate {
   link?: string | null
   link_label?: string | null
   subpoints?: string[]
+  set_link?: boolean
+  set_link_label?: boolean
+  set_subpoints?: boolean
 }
 
 export const projectApi = {

@@ -151,16 +151,16 @@ async def update_education(
         update_data["location"] = education_data.location
     if education_data.degree is not None:
         update_data["degree"] = education_data.degree
-    if education_data.gpa is not None:
+    if education_data.set_gpa or education_data.gpa is not None:
         update_data["gpa"] = education_data.gpa
-    if education_data.max_gpa is not None:
+    if education_data.set_max_gpa or education_data.max_gpa is not None:
         update_data["max_gpa"] = education_data.max_gpa
     if education_data.start_date is not None:
         update_data["start_date"] = education_data.start_date
     if education_data.end_date is not None:
         update_data["end_date"] = education_data.end_date
-    if education_data.courses is not None:
-        update_data["courses"] = education_data.courses
+    if education_data.set_courses or education_data.courses is not None:
+        update_data["courses"] = education_data.courses or []
     
     await educations_collection.update_one(
         {"_id": education_object_id},

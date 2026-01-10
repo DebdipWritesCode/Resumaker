@@ -149,12 +149,12 @@ async def update_project(
         update_data["end_date"] = project_data.end_date
     if project_data.tech_stack is not None:
         update_data["tech_stack"] = project_data.tech_stack
-    if project_data.link is not None:
+    if project_data.set_link or project_data.link is not None:
         update_data["link"] = project_data.link
-    if project_data.link_label is not None:
+    if project_data.set_link_label or project_data.link_label is not None:
         update_data["link_label"] = project_data.link_label
-    if project_data.subpoints is not None:
-        update_data["subpoints"] = project_data.subpoints
+    if project_data.set_subpoints or project_data.subpoints is not None:
+        update_data["subpoints"] = project_data.subpoints or []
     
     await projects_collection.update_one(
         {"_id": project_object_id},

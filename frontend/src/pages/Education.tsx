@@ -166,6 +166,7 @@ const Education = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingEducationId, setEditingEducationId] = useState<number | null>(null)
+  const [originalEducation, setOriginalEducation] = useState<EducationResponse | null>(null)
 
   useEffect(() => {
     dispatch(fetchEducation())
@@ -250,6 +251,7 @@ const Education = () => {
 
   const handleOpenDialog = () => {
     setEditingEducationId(null)
+    setOriginalEducation(null)
     form.reset({
       institution: '',
       location: '',
@@ -268,6 +270,7 @@ const Education = () => {
   const handleEditEducation = (educationItem: EducationResponse) => {
     try {
       setEditingEducationId(educationItem.id)
+      setOriginalEducation(educationItem)
       const { program, major, specialization } = parseDegree(educationItem.degree)
       const { gpa, maxGpa } = parseGpa(educationItem.gpa, educationItem.max_gpa)
       
@@ -351,7 +354,7 @@ const Education = () => {
         ? data.courses.map((c) => c.name).filter((name) => name.trim() !== '')
         : []
 
-      const payload = {
+      const payload: any = {
         institution: data.institution,
         location: data.location,
         degree: degree,
@@ -360,6 +363,22 @@ const Education = () => {
         start_date: data.startDate,
         end_date: data.endDate,
         courses: coursesArray.length > 0 ? coursesArray : null,
+      }
+
+      // For updates, check if optional fields are being cleared
+      if (editingEducationId !== null && originalEducation) {
+        // Check if gpa is being cleared (had value, now empty)
+        if (originalEducation.gpa !== null && originalEducation.gpa !== undefined && gpaValue === null) {
+          payload.set_gpa = true
+        }
+        // Check if max_gpa is being cleared (had value, now empty)
+        if (originalEducation.max_gpa !== null && originalEducation.max_gpa !== undefined && maxGpaValue === null) {
+          payload.set_max_gpa = true
+        }
+        // Check if courses is being cleared (had value, now empty)
+        if (originalEducation.courses && originalEducation.courses.length > 0 && coursesArray.length === 0) {
+          payload.set_courses = true
+        }
       }
 
       if (editingEducationId !== null) {
@@ -377,6 +396,7 @@ const Education = () => {
 
       setIsDialogOpen(false)
       setEditingEducationId(null)
+      setOriginalEducation(null)
       form.reset()
       dispatch(fetchEducation())
     } catch (err: any) {
@@ -564,13 +584,14 @@ const Education = () => {
 
       <Dialog 
         open={isDialogOpen} 
-        onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) {
-            setEditingEducationId(null)
-            form.reset()
-          }
-        }}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open)
+            if (!open) {
+              setEditingEducationId(null)
+              setOriginalEducation(null)
+              form.reset()
+            }
+          }}
       >
         <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
