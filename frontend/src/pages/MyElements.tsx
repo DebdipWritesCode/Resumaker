@@ -85,10 +85,10 @@ const MyElements = () => {
     const routes: Record<string, string> = {
       heading: '/my-elements/heading',
       education: '/my-elements/education',
+      experience: '/my-elements/experience',
+      projects: '/my-elements/projects',
+      skills: '/my-elements/skills',
       // TODO: Add routes for other elements as they are implemented
-      // experience: '/my-elements/experience',
-      // projects: '/my-elements/projects',
-      // skills: '/my-elements/skills',
       // certifications: '/my-elements/certifications',
       // awards: '/my-elements/awards',
       // volunteer: '/my-elements/volunteer',

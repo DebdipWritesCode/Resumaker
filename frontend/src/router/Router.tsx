@@ -15,6 +15,9 @@ import MyProfile from '@/pages/MyProfile'
 import ResumeTips from '@/pages/ResumeTips'
 import Heading from '@/pages/Heading'
 import Education from '@/pages/Education'
+import Experience from '@/pages/Experience'
+import Projects from '@/pages/Projects'
+import Skills from '@/pages/Skills'
 
 const Router = () => {
   return (
@@ -35,6 +38,9 @@ const Router = () => {
         <Route path="/my-elements" element={<MyElements />} />
         <Route path="/my-elements/heading" element={<Heading />} />
         <Route path="/my-elements/education" element={<Education />} />
+        <Route path="/my-elements/experience" element={<Experience />} />
+        <Route path="/my-elements/projects" element={<Projects />} />
+        <Route path="/my-elements/skills" element={<Skills />} />
         <Route path="/make-resume" element={<MakeResume />} />
         <Route path="/history" element={<History />} />
         <Route path="/my-profile" element={<MyProfile />} />
