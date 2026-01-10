@@ -137,7 +137,7 @@ const MyElements = () => {
               </div>
               <div className="flex-1 w-full text-left min-w-0">
                 <h3 className="text-lg font-semibold mb-2">{element.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed break-words whitespace-normal">
+                <p className="text-sm text-muted-foreground leading-relaxed wrap-break-word whitespace-normal">
                   {element.description}
                 </p>
               </div>

@@ -254,7 +254,7 @@ const Experience = () => {
               className="group relative border rounded-xl p-6 bg-card shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden"
             >
               {/* Decorative gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               
               <div className="relative">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-4">
