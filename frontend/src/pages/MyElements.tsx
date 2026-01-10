@@ -90,8 +90,7 @@ const MyElements = () => {
       skills: '/my-elements/skills',
       certifications: '/my-elements/certifications',
       awards: '/my-elements/awards',
-      // TODO: Add routes for other elements as they are implemented
-      // volunteer: '/my-elements/volunteer',
+      volunteer: '/my-elements/volunteer',
     }
 
     const route = routes[elementId]

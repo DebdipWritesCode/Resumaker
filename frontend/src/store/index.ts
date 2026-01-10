@@ -7,6 +7,7 @@ import projectReducer from './slices/projectSlice'
 import skillReducer from './slices/skillSlice'
 import certificationReducer from './slices/certificationSlice'
 import awardReducer from './slices/awardSlice'
+import volunteerReducer from './slices/volunteerSlice'
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     skill: skillReducer,
     certification: certificationReducer,
     award: awardReducer,
+    volunteer: volunteerReducer,
   },
 })
 
