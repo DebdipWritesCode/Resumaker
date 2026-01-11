@@ -63,6 +63,15 @@ def get_users_collection():
 def get_refresh_tokens_collection():
     return get_database().refresh_tokens
 
+def get_otps_collection():
+    return get_database().otps
+
+def get_password_reset_otps_collection():
+    return get_database().password_reset_otps
+
+def get_password_reset_eligibility_collection():
+    return get_database().password_reset_eligibility
+
 def get_headings_collection():
     return get_database().headings
 

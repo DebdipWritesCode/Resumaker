@@ -45,8 +45,10 @@ const Signup = () => {
     setError(null)
     try {
       await authApi.signup(data)
-      // Redirect to login page after successful signup
-      navigate('/login', { state: { message: 'Account created successfully! Please login.' } })
+      // Redirect to verify email page after successful signup
+      navigate(`/verify?email=${encodeURIComponent(data.email)}`, {
+        state: { message: 'Account created successfully! Please verify your email to continue.' }
+      })
     } catch (err: any) {
       setError(
         err.response?.data?.detail || err.response?.data?.message || 'Failed to create account'

@@ -1,6 +1,7 @@
 import Login from '@/pages/Auth/Login'
 import Signup from '@/pages/Auth/Signup'
 import VerifyEmail from '@/pages/Auth/VerifyEmail'
+import ForgotPassword from '@/pages/Auth/ForgotPassword'
 import NotFound from '@/pages/NotFound'
 import { Route, Routes } from 'react-router-dom'
 
@@ -29,6 +30,7 @@ const Router = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       <Route
         element={

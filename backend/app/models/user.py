@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str
     is_admin: bool
+    is_verified: bool = False
     created_at: datetime
     
     class Config:

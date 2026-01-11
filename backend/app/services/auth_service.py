@@ -6,6 +6,16 @@ from app.models.user import UserRegister, UserLogin
 from app.utils.password_handler import hash_password, verify_password
 from app.utils.jwt_handler import create_access_token, create_refresh_token, verify_refresh_token
 from app.settings.get_env import COOKIE_DOMAIN, REFRESH_TOKEN_EXPIRATION_HOURS
+from app.services.otp_service import create_otp
+from app.services.email_service import send_verification_email, send_password_reset_email
+from app.services.password_reset_service import (
+    create_password_reset_otp,
+    verify_password_reset_otp as verify_password_reset_otp_service,
+    delete_user_password_reset_otps,
+    create_eligibility_entry,
+    check_eligibility,
+    delete_eligibility
+)
 
 async def register_user(user_data: UserRegister) -> dict:
     """Register a new user"""
@@ -26,6 +36,7 @@ async def register_user(user_data: UserRegister) -> dict:
         "first_name": user_data.first_name,
         "last_name": user_data.last_name,
         "is_admin": False,
+        "is_verified": False,
         "analytics": {
             "ai_calls_count": 0,
             "pdfs_generated_count": 0,
@@ -39,12 +50,28 @@ async def register_user(user_data: UserRegister) -> dict:
     result = await users_collection.insert_one(user_doc)
     user_doc["_id"] = result.inserted_id
     
+    # Generate OTP and send verification email
+    try:
+        otp_code = await create_otp(user_doc["_id"])
+        send_verification_email(
+            user_email=user_data.email,
+            user_name=user_data.first_name,
+            otp=otp_code
+        )
+    except Exception as e:
+        # Log error but don't fail registration
+        # User can request resend verification email later
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send verification email during registration: {e}")
+    
     return {
         "id": str(user_doc["_id"]),
         "email": user_doc["email"],
         "first_name": user_doc["first_name"],
         "last_name": user_doc["last_name"],
         "is_admin": False,
+        "is_verified": False,
         "created_at": user_doc["created_at"]
     }
 
@@ -65,6 +92,13 @@ async def login_user(user_data: UserLogin, response: Response) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
+        )
+    
+    # Check if user is verified
+    if not user.get("is_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please verify your email to login."
         )
     
     # Create tokens
@@ -147,6 +181,13 @@ async def refresh_access_token(refresh_token: str, response: Response) -> dict:
             detail="User not found"
         )
     
+    # Check if user is verified
+    if not user.get("is_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please verify your email to continue."
+        )
+    
     # Create new access token
     new_access_token = create_access_token(data={"sub": user_id})
     
@@ -170,4 +211,228 @@ async def logout_user(refresh_token: str, response: Response):
     )
     
     return {"message": "Logged out successfully"}
+
+async def verify_user_otp(email: str, otp: str) -> dict:
+    """
+    Verify OTP and mark user as verified
+    
+    Args:
+        email: User's email address
+        otp: OTP code to verify
+        
+    Returns:
+        Success message
+    """
+    users_collection = get_users_collection()
+    
+    # Find user by email
+    user = await users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if already verified
+    if user.get("is_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already verified"
+        )
+    
+    # Verify OTP
+    from app.services.otp_service import verify_otp
+    is_valid = await verify_otp(user["_id"], otp)
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP"
+        )
+    
+    # Mark user as verified
+    await users_collection.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"is_verified": True, "updated_at": datetime.utcnow()}}
+    )
+    
+    return {
+        "message": "Email verified successfully",
+        "email": email
+    }
+
+async def resend_verification_email(email: str) -> dict:
+    """
+    Resend verification email to user
+    
+    Args:
+        email: User's email address
+        
+    Returns:
+        Success message
+    """
+    users_collection = get_users_collection()
+    
+    # Find user by email
+    user = await users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if already verified
+    if user.get("is_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already verified"
+        )
+    
+    # Delete existing OTPs and create new one
+    from app.services.otp_service import create_otp, delete_user_otps
+    await delete_user_otps(user["_id"])
+    otp_code = await create_otp(user["_id"])
+    
+    # Send verification email
+    send_verification_email(
+        user_email=user["email"],
+        user_name=user["first_name"],
+        otp=otp_code
+    )
+    
+    return {
+        "message": "Verification email sent successfully",
+        "email": email
+    }
+
+async def request_password_reset(email: str) -> dict:
+    """
+    Request password reset by sending OTP to user's email
+    
+    Args:
+        email: User's email address
+        
+    Returns:
+        Success message
+    """
+    users_collection = get_users_collection()
+    
+    # Find user by email
+    user = await users_collection.find_one({"email": email})
+    if not user:
+        # Don't reveal if user exists or not for security
+        # Return success message even if user doesn't exist
+        return {
+            "message": "If an account with this email exists, a password reset OTP has been sent.",
+            "email": email
+        }
+    
+    # Generate password reset OTP and send email
+    try:
+        otp_code = await create_password_reset_otp(user["_id"])
+        send_password_reset_email(
+            user_email=user["email"],
+            user_name=user["first_name"],
+            otp=otp_code
+        )
+    except Exception as e:
+        # Log error but don't reveal if user exists
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send password reset email: {e}")
+        # Still return success message for security
+    
+    return {
+        "message": "If an account with this email exists, a password reset OTP has been sent.",
+        "email": email
+    }
+
+async def verify_password_reset_otp(email: str, otp: str) -> dict:
+    """
+    Verify password reset OTP and create eligibility entry
+    
+    Args:
+        email: User's email address
+        otp: OTP code to verify
+        
+    Returns:
+        Success message
+    """
+    users_collection = get_users_collection()
+    
+    # Find user by email
+    user = await users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Verify OTP
+    is_valid = await verify_password_reset_otp_service(user["_id"], otp)
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP"
+        )
+    
+    # Create eligibility entry
+    await create_eligibility_entry(user["_id"], email)
+    
+    return {
+        "message": "OTP verified successfully. You can now reset your password.",
+        "email": email
+    }
+
+async def reset_password(email: str, new_password: str) -> dict:
+    """
+    Reset user password after eligibility verification
+    
+    Args:
+        email: User's email address
+        new_password: New password to set
+        
+    Returns:
+        Success message
+    """
+    users_collection = get_users_collection()
+    
+    # Check eligibility
+    eligibility = await check_eligibility(email)
+    if not eligibility:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email first before setting new password"
+        )
+    
+    # Find user by email
+    user = await users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update password
+    await users_collection.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "password_hash": hash_password(new_password),
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    # Delete eligibility entry
+    await delete_eligibility(email)
+    
+    # Delete any remaining password reset OTPs for this user
+    await delete_user_password_reset_otps(user["_id"])
+    
+    return {
+        "message": "Password reset successfully",
+        "email": email
+    }
 

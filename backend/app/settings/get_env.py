@@ -27,6 +27,10 @@ CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
 # OpenAI
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 
+# Email (Gmail SMTP)
+SMTP_EMAIL: str = os.getenv("SMTP_EMAIL", "")
+SMTP_APP_PASSWORD: str = os.getenv("SMTP_APP_PASSWORD", "")
+
 # Application
 ENVIRONMENT: str = os.getenv("ENVIRONMENT", "dev")
 CORS_ORIGINS: List[str] = [
@@ -45,6 +49,8 @@ if ENVIRONMENT == "prod":
         ("CLOUDINARY_API_KEY", CLOUDINARY_API_KEY),
         ("CLOUDINARY_API_SECRET", CLOUDINARY_API_SECRET),
         ("OPENAI_API_KEY", OPENAI_API_KEY),
+        ("SMTP_EMAIL", SMTP_EMAIL),
+        ("SMTP_APP_PASSWORD", SMTP_APP_PASSWORD),
     ]
     
     missing_vars = [var_name for var_name, var_value in required_vars if not var_value]
