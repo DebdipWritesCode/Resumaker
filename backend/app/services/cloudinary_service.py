@@ -68,6 +68,25 @@ async def upload_image_from_bytes(image_bytes: bytes, user_id: str, filename: st
     except Exception as e:
         raise Exception(f"Failed to upload image to Cloudinary: {str(e)}")
 
+async def upload_latex_from_bytes(latex_bytes: bytes, user_id: str, filename: str) -> dict:
+    """Upload LaTeX file to Cloudinary from bytes"""
+    try:
+        import io
+        file_obj = io.BytesIO(latex_bytes)
+        result = cloudinary.uploader.upload(
+            file_obj,
+            resource_type="raw",
+            folder=f"resumes/{user_id}/latex",
+            public_id=filename,
+            format="tex"
+        )
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"]
+        }
+    except Exception as e:
+        raise Exception(f"Failed to upload LaTeX to Cloudinary: {str(e)}")
+
 async def delete_pdf(public_id: str):
     """Delete PDF from Cloudinary"""
     try:

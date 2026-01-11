@@ -20,6 +20,9 @@ export interface CustomResume {
   volunteers: VolunteerResponse[]
   certifications: CertificationResponse[]
   awards: AwardResponse[]
+  thumbnail_url?: string | null
+  pdf_url?: string | null
+  latex_url?: string | null
   created_at: string
   updated_at: string
 }
@@ -59,6 +62,18 @@ export interface UserElementsResponse {
   awards: AwardResponse[]
 }
 
+export interface SelectElementsRequest {
+  job_description: string
+}
+
+export interface SelectElementsResponse {
+  project_ids: string[]
+  award_ids: string[]
+  certification_ids: string[]
+  volunteer_ids: string[]
+  tokens_used: number
+}
+
 export const customResumeApi = {
   getAllResumes: async (): Promise<CustomResume[]> => {
     const response = await api.get<CustomResume[]>('/api/custom-resume/')
@@ -70,13 +85,17 @@ export const customResumeApi = {
     return response.data
   },
 
-  createResume: async (data: CustomResumeCreate): Promise<CustomResume> => {
-    const response = await api.post<CustomResume>('/api/custom-resume/', data)
+  createResume: async (data: CustomResumeCreate): Promise<Blob> => {
+    const response = await api.post('/api/custom-resume/', data, {
+      responseType: 'blob',
+    })
     return response.data
   },
 
-  updateResume: async (resumeId: string, data: CustomResumeUpdate): Promise<CustomResume> => {
-    const response = await api.put<CustomResume>(`/api/custom-resume/${resumeId}`, data)
+  updateResume: async (resumeId: string, data: CustomResumeUpdate): Promise<Blob> => {
+    const response = await api.put(`/api/custom-resume/${resumeId}`, data, {
+      responseType: 'blob',
+    })
     return response.data
   },
 
@@ -86,6 +105,11 @@ export const customResumeApi = {
 
   getUserElements: async (): Promise<UserElementsResponse> => {
     const response = await api.get<UserElementsResponse>('/api/custom-resume/user-elements')
+    return response.data
+  },
+
+  selectElements: async (data: SelectElementsRequest): Promise<SelectElementsResponse> => {
+    const response = await api.post<SelectElementsResponse>('/api/custom-resume/select-elements', data)
     return response.data
   },
 }

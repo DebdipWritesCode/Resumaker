@@ -18,6 +18,11 @@ import {
   MoreVertical,
   Loader2,
   FileText,
+  Download,
+  FileCode,
+  Link2,
+  Check,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,6 +48,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select'
 import { customResumeApi, type CustomResume, type UserElementsResponse } from '@/api/custom-resume'
 import { toast } from 'react-toastify'
@@ -96,6 +102,11 @@ const MakeResume = () => {
   })
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
+  const [copiedResumeId, setCopiedResumeId] = useState<string | null>(null)
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false)
+  const [jobDescription, setJobDescription] = useState('')
+  const [isSelectingWithAi, setIsSelectingWithAi] = useState(false)
 
   const form = useForm<ResumeFormValues>({
     resolver: zodResolver(resumeSchema),
@@ -174,6 +185,7 @@ const MakeResume = () => {
       award_ids: [],
     })
     setActiveTab('heading')
+    setPdfPreviewUrl(null) // Clear previous PDF preview
     setIsDialogOpen(true)
     await fetchUserElements()
   }
@@ -194,6 +206,7 @@ const MakeResume = () => {
       award_ids: resume.awards.map((a) => String(a.id)),
     })
     setActiveTab('heading')
+    setPdfPreviewUrl(null) // Clear previous PDF preview
     setIsDialogOpen(true)
     await fetchUserElements()
   }
@@ -221,21 +234,82 @@ const MakeResume = () => {
         award_ids: selectedElements.award_ids,
       }
 
+      let pdfBlob: Blob
       if (editingResume) {
-        await customResumeApi.updateResume(editingResume.id, payload)
-        toast.success('Resume updated successfully')
+        pdfBlob = await customResumeApi.updateResume(editingResume.id, payload)
+        toast.success('Resume updated and compiled successfully')
       } else {
-        await customResumeApi.createResume(payload)
-        toast.success('Resume created successfully')
+        pdfBlob = await customResumeApi.createResume(payload)
+        toast.success('Resume created and compiled successfully')
       }
 
-      setIsDialogOpen(false)
+      // Create blob URL for PDF preview
+      const pdfUrl = URL.createObjectURL(pdfBlob)
+      setPdfPreviewUrl(pdfUrl)
+
+      // Refresh resume list to get updated data
       await fetchResumes()
     } catch (error: any) {
       console.error('Error saving resume:', error)
       toast.error(error.response?.data?.detail || 'Failed to save resume')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Clean up PDF preview URL when dialog closes
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl)
+      }
+    }
+  }, [pdfPreviewUrl])
+
+  // Handle AI selection
+  const handleAiSelection = async () => {
+    if (!jobDescription.trim()) {
+      toast.error('Please enter a job description')
+      return
+    }
+
+    try {
+      setIsSelectingWithAi(true)
+      const response = await customResumeApi.selectElements({
+        job_description: jobDescription.trim(),
+      })
+
+      // Update selected elements by replacing (not merging) the four categories
+      setSelectedElements((prev) => ({
+        ...prev,
+        project_ids: response.project_ids,
+        award_ids: response.award_ids,
+        certification_ids: response.certification_ids,
+        volunteer_ids: response.volunteer_ids,
+      }))
+
+      // Calculate total elements selected
+      const totalElements =
+        response.project_ids.length +
+        response.award_ids.length +
+        response.certification_ids.length +
+        response.volunteer_ids.length
+
+      toast.success(
+        `AI selected ${totalElements} elements`
+      )
+
+      // Close AI dialog
+      setIsAiDialogOpen(false)
+      setJobDescription('')
+    } catch (error: any) {
+      console.error('Error selecting elements with AI:', error)
+      const errorMessage =
+        error.response?.data?.detail ||
+        'Failed to select elements with AI. Please try again.'
+      toast.error(errorMessage)
+    } finally {
+      setIsSelectingWithAi(false)
     }
   }
 
@@ -511,10 +585,21 @@ const MakeResume = () => {
               key={resume.id}
               className="border rounded-lg p-4 sm:p-6 hover:shadow-lg transition-shadow bg-card w-full max-w-full overflow-hidden"
             >
+              {/* Thumbnail */}
+              {resume.thumbnail_url && (
+                <div className="mb-4 rounded-lg overflow-hidden border bg-muted/30">
+                  <img
+                    src={resume.thumbnail_url}
+                    alt={`${resume.name} thumbnail`}
+                    className="w-full h-48 sm:h-64 object-cover"
+                  />
+                </div>
+              )}
+              
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0 pr-2">
                   <h3 className="text-base sm:text-lg font-semibold truncate mb-1">{resume.name}</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground break-words">
+                  <p className="text-xs sm:text-sm text-muted-foreground wrap-break-word">
                     {getElementCounts(resume)}
                   </p>
                 </div>
@@ -559,22 +644,106 @@ const MakeResume = () => {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem
-                      onClick={() => {
-                        // TODO: Implement download PDF
-                        toast.info('Download PDF feature coming soon')
+                      onClick={async () => {
+                        if (resume.pdf_url) {
+                          try {
+                            const link = document.createElement('a')
+                            link.href = resume.pdf_url
+                            link.download = `${resume.name}.pdf`
+                            link.target = '_blank'
+                            document.body.appendChild(link)
+                            link.click()
+                            document.body.removeChild(link)
+                            toast.success('PDF download started')
+                          } catch (error) {
+                            console.error('Error downloading PDF:', error)
+                            toast.error('Failed to download PDF')
+                          }
+                        } else {
+                          toast.error('PDF not available for this resume')
+                        }
                       }}
+                      disabled={!resume.pdf_url}
+                      className="cursor-pointer"
                     >
-                      Download PDF
+                      <Download className="h-4 w-4 mr-2 text-blue-500" />
+                      <span>Download PDF</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => {
-                        // TODO: Implement download LaTeX
-                        toast.info('Download LaTeX feature coming soon')
+                      onClick={async () => {
+                        if (resume.latex_url) {
+                          try {
+                            const link = document.createElement('a')
+                            link.href = resume.latex_url
+                            link.download = `${resume.name}.tex`
+                            link.target = '_blank'
+                            document.body.appendChild(link)
+                            link.click()
+                            document.body.removeChild(link)
+                            toast.success('LaTeX file download started')
+                          } catch (error) {
+                            console.error('Error downloading LaTeX:', error)
+                            toast.error('Failed to download LaTeX file')
+                          }
+                        } else {
+                          toast.error('LaTeX file not available for this resume')
+                        }
                       }}
+                      disabled={!resume.latex_url}
+                      className="cursor-pointer"
                     >
-                      Download LaTeX
+                      <FileCode className="h-4 w-4 mr-2 text-purple-500" />
+                      <span>Download LaTeX</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        try {
+                          const publicUrl = `${window.location.origin}/resume/${resume.id}`
+                          await navigator.clipboard.writeText(publicUrl)
+                          setCopiedResumeId(resume.id)
+                          toast.success('Public link copied to clipboard!')
+                          // Reset the copied state after 2 seconds
+                          setTimeout(() => {
+                            setCopiedResumeId(null)
+                          }, 2000)
+                        } catch (error) {
+                          console.error('Error copying to clipboard:', error)
+                          // Fallback for browsers that don't support clipboard API
+                          const publicUrl = `${window.location.origin}/resume/${resume.id}`
+                          const textArea = document.createElement('textarea')
+                          textArea.value = publicUrl
+                          textArea.style.position = 'fixed'
+                          textArea.style.opacity = '0'
+                          document.body.appendChild(textArea)
+                          textArea.select()
+                          try {
+                            document.execCommand('copy')
+                            setCopiedResumeId(resume.id)
+                            toast.success('Public link copied to clipboard!')
+                            setTimeout(() => {
+                              setCopiedResumeId(null)
+                            }, 2000)
+                          } catch (err) {
+                            toast.error('Failed to copy link')
+                          }
+                          document.body.removeChild(textArea)
+                        }
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {copiedResumeId === resume.id ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2 text-green-500" />
+                          <span>Link Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="h-4 w-4 mr-2 text-orange-500" />
+                          <span>Copy Public Link</span>
+                        </>
+                      )}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -585,134 +754,261 @@ const MakeResume = () => {
       )}
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl w-[calc(100vw-2rem)] sm:w-full max-h-[90vh] flex flex-col">
-          <DialogHeader>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            // Clean up PDF preview URL when dialog closes
+            if (pdfPreviewUrl) {
+              URL.revokeObjectURL(pdfPreviewUrl)
+              setPdfPreviewUrl(null)
+            }
+          }
+          setIsDialogOpen(open)
+        }}
+      >
+        <DialogContent className="max-w-5xl w-[calc(100vw-2rem)] sm:w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
             <DialogTitle>{editingResume ? 'Edit Resume' : 'Create New Resume'}</DialogTitle>
             <DialogDescription>
               Select elements from your resume to include in this custom resume
             </DialogDescription>
           </DialogHeader>
+          <div className="px-6 pb-4 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAiDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Select with AI</span>
+            </Button>
+          </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="flex flex-col flex-1 min-h-0">
-              <div className="space-y-4 mb-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Resume Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Software Engineer Resume" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            <form onSubmit={form.handleSubmit(handleSave)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar px-6 min-h-0">
+                <div className="space-y-4 mb-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Resume Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Software Engineer Resume" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-              {/* Tabs */}
-              <div className="w-full bg-background border-b mb-4">
-                <div className="px-2 overflow-x-auto custom-scrollbar">
-                  <div className="flex gap-2 min-w-max py-2">
-                    {tabs.map((tab) => {
-                      const TabIcon = tab.icon
-                      const isActive = activeTab === tab.id
-                      const selectedCount = getSelectedIds(tab.id).length
+                {/* Tabs */}
+                <div className="w-full bg-background border-b mb-4 -mx-6 px-6">
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <div className="flex gap-2 min-w-max py-2">
+                      {tabs.map((tab) => {
+                        const TabIcon = tab.icon
+                        const isActive = activeTab === tab.id
+                        const selectedCount = getSelectedIds(tab.id).length
 
-                      return (
-                        <Button
-                          key={tab.id}
-                          type="button"
-                          variant={isActive ? 'default' : 'ghost'}
-                          onClick={() => setActiveTab(tab.id)}
-                          className={cn(
-                            'flex items-center gap-2 whitespace-nowrap transition-colors',
-                            isActive && 'bg-primary text-primary-foreground hover:bg-primary/90'
-                          )}
-                        >
-                          <TabIcon className="h-4 w-4 shrink-0" />
-                          <span className="text-sm">{tab.label}</span>
-                          {selectedCount > 0 && (
-                            <span
-                              className={cn(
-                                'px-1.5 py-0.5 rounded-full text-xs font-medium',
-                                isActive
-                                  ? 'bg-primary-foreground/20 text-primary-foreground'
-                                  : 'bg-muted text-muted-foreground'
-                              )}
-                            >
-                              {selectedCount}
-                            </span>
-                          )}
-                        </Button>
-                      )
-                    })}
+                        return (
+                          <Button
+                            key={tab.id}
+                            type="button"
+                            variant={isActive ? 'default' : 'ghost'}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                              'flex items-center gap-2 whitespace-nowrap transition-colors',
+                              isActive && 'bg-primary text-primary-foreground hover:bg-primary/90'
+                            )}
+                          >
+                            <TabIcon className="h-4 w-4 shrink-0" />
+                            <span className="text-sm">{tab.label}</span>
+                            {selectedCount > 0 && (
+                              <span
+                                className={cn(
+                                  'px-1.5 py-0.5 rounded-full text-xs font-medium',
+                                  isActive
+                                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                                    : 'bg-muted text-muted-foreground'
+                                )}
+                              >
+                                {selectedCount}
+                              </span>
+                            )}
+                          </Button>
+                        )
+                      })}
+                    </div>
                   </div>
+                </div>
+
+                {/* Tab Content */}
+                <div className="min-h-[300px] pb-4">
+                  {loadingElements ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
+                          {activeTab === 'heading' ? 'Select Heading (Maximum 1)' : `Select ${tabs.find((t) => t.id === activeTab)?.label}`}
+                        </label>
+                        <MultiSelect
+                          options={getElementOptions(activeTab)}
+                          selected={getSelectedIds(activeTab)}
+                          onChange={(selected) => handleElementChange(activeTab, selected)}
+                          placeholder={`Select ${tabs.find((t) => t.id === activeTab)?.label.toLowerCase()}...`}
+                          maxSelections={activeTab === 'heading' ? 1 : undefined}
+                          searchable={true}
+                        />
+                        {activeTab === 'heading' && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            You can only select one heading per resume
+                          </p>
+                        )}
+                      </div>
+
+                      {/* PDF Preview Section */}
+                      {pdfPreviewUrl && (
+                        <div className="space-y-2 mt-6 border-t pt-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold">PDF Preview</h3>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const link = document.createElement('a')
+                                link.href = pdfPreviewUrl
+                                link.download = `${form.getValues('name') || 'resume'}.pdf`
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                              }}
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Download PDF
+                            </Button>
+                          </div>
+                          <div className="border rounded-lg overflow-hidden bg-muted/30">
+                            <iframe
+                              src={`${pdfPreviewUrl}#page=1`}
+                              className="w-full h-[500px] sm:h-[600px]"
+                              title="PDF Preview"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Tab Content */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar min-h-[300px]">
-                {loadingElements ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
-                        {activeTab === 'heading' ? 'Select Heading (Maximum 1)' : `Select ${tabs.find((t) => t.id === activeTab)?.label}`}
-                      </label>
-                      <MultiSelect
-                        options={getElementOptions(activeTab)}
-                        selected={getSelectedIds(activeTab)}
-                        onChange={(selected) => handleElementChange(activeTab, selected)}
-                        placeholder={`Select ${tabs.find((t) => t.id === activeTab)?.label.toLowerCase()}...`}
-                        maxSelections={activeTab === 'heading' ? 1 : undefined}
-                        searchable={true}
-                      />
-                      {activeTab === 'heading' && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          You can only select one heading per resume
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter className="mt-4">
+              {/* Fixed Footer */}
+              <DialogFooter className="px-6 py-4 border-t shrink-0 mt-0">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
+                  onClick={() => {
+                    if (pdfPreviewUrl) {
+                      URL.revokeObjectURL(pdfPreviewUrl)
+                      setPdfPreviewUrl(null)
+                    }
+                    setIsDialogOpen(false)
+                  }}
                   disabled={saving}
                 >
                   Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled
-                  title="Coming soon"
-                >
-                  Compile
                 </Button>
                 <Button type="submit" disabled={saving}>
                   {saving ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {editingResume ? 'Updating...' : 'Creating...'}
+                      {editingResume ? 'Updating and Compiling...' : 'Creating and Compiling...'}
                     </>
                   ) : (
-                    editingResume ? 'Update Resume' : 'Create Resume'
+                    editingResume ? 'Update and Compile' : 'Save and Compile'
                   )}
                 </Button>
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Selection Dialog */}
+      <Dialog
+        open={isAiDialogOpen}
+        onOpenChange={(open) => {
+          setIsAiDialogOpen(open)
+          if (!open) {
+            setJobDescription('')
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Select Elements with AI
+            </DialogTitle>
+            <DialogDescription>
+              Enter a job description and AI will automatically select the most relevant projects, awards, certifications, and volunteer experiences for your resume.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium leading-none mb-2 block">
+                Job Description
+              </label>
+              <Textarea
+                placeholder="Paste or type the job description here...&#10;&#10;Example: We are looking for a Full Stack Developer with experience in React, Node.js, and MongoDB. The ideal candidate should have experience building scalable web applications and working with cloud services."
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                className="min-h-[150px] resize-y"
+                disabled={isSelectingWithAi}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                The AI will analyze the job description and select up to 3 projects, 3-4 awards, 2 certifications, and 2 volunteer experiences that best match the requirements.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsAiDialogOpen(false)
+                setJobDescription('')
+              }}
+              disabled={isSelectingWithAi}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAiSelection}
+              disabled={isSelectingWithAi || !jobDescription.trim()}
+            >
+              {isSelectingWithAi ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Selecting Elements...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Select Elements
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

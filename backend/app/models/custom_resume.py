@@ -46,6 +46,13 @@ class CustomResumeResponse(BaseModel):
     volunteers: List[VolunteerResponse] = []
     certifications: List[CertificationResponse] = []
     awards: List[AwardResponse] = []
+    latex_url: Optional[str] = None
+    latex_public_id: Optional[str] = None
+    cloudinary_url: Optional[str] = None  # PDF URL (primary)
+    cloudinary_public_id: Optional[str] = None  # PDF public ID
+    pdf_url: Optional[str] = None  # Alias for cloudinary_url (backward compatibility)
+    thumbnail_url: Optional[str] = None
+    thumbnail_public_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -64,3 +71,14 @@ class UserElementsResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+# AI Selection Models
+class SelectResumeElementsRequest(BaseModel):
+    job_description: str
+
+class SelectResumeElementsResponse(BaseModel):
+    project_ids: List[str] = []
+    award_ids: List[str] = []
+    certification_ids: List[str] = []
+    volunteer_ids: List[str] = []
+    tokens_used: int

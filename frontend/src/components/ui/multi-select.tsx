@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Check, ChevronDown, X } from 'lucide-react'
+import { Check, ChevronDown} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -81,11 +81,6 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
       }
     }
 
-    const handleRemove = (value: string, e: React.MouseEvent) => {
-      e.stopPropagation()
-      onChange(selected.filter((v) => v !== value))
-    }
-
     const selectedLabels = React.useMemo(() => {
       return selected
         .map((val) => options.find((opt) => opt.value === val)?.label)
@@ -160,7 +155,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
           className="max-w-[calc(100vw-2rem)] sm:max-w-md p-0 overflow-x-hidden w-[85%]" 
           align="start"
           side="bottom"
-          sideOffset={4}
+          sideOffset={-80}
           avoidCollisions={false}
           collisionPadding={8}
         >
@@ -248,9 +243,9 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                             {isSelected && <Check className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />}
                           </div>
                           <div className="flex-1 min-w-0 overflow-hidden">
-                            <div className="font-medium text-xs sm:text-sm mb-1 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{option.label}</div>
+                            <div className="font-medium text-xs sm:text-sm mb-1 wrap-break-word" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{option.label}</div>
                             {option.description && (
-                              <div className="text-xs text-muted-foreground break-words line-clamp-2 sm:line-clamp-3" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                              <div className="text-xs text-muted-foreground wrap-break-word line-clamp-2 sm:line-clamp-3" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                                 {option.description}
                               </div>
                             )}
@@ -258,7 +253,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                               <div className="mt-1 sm:mt-2 space-y-0.5 sm:space-y-1">
                                 {Object.entries(option.details).slice(0, 2).map(([key, value]) => (
                                   value && (
-                                    <div key={key} className="text-xs text-muted-foreground break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                                    <div key={key} className="text-xs text-muted-foreground wrap-break-word" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                                       <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
                                       <span className="break-all" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{String(value)}</span>
                                     </div>

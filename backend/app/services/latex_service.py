@@ -19,17 +19,27 @@ def compile_latex(input_file: str, output_name: str, output_dir: str = ".") -> O
         raise FileNotFoundError(f"LaTeX file not found: {input_file}")
     
     try:
-        # Run pdflatex with non-interactive mode
+        # Run pdflatex twice (required for hyperref and cross-references)
         # -interaction=nonstopmode: Don't stop for errors
         # -output-directory: Output to specified directory
-        result = subprocess.run(
+        # First run
+        result1 = subprocess.run(
             ['pdflatex', '-interaction=nonstopmode', f'-output-directory={output_dir}', input_file],
             capture_output=True,
             text=True,
             check=False
         )
         
-        if result.returncode == 0:
+        # Second run (for hyperref and cross-references)
+        result2 = subprocess.run(
+            ['pdflatex', '-interaction=nonstopmode', f'-output-directory={output_dir}', input_file],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        # Check if second run succeeded (first run may have warnings)
+        if result2.returncode == 0:
             # Get the output PDF path
             input_basename = os.path.splitext(os.path.basename(input_file))[0]
             output_pdf = os.path.join(output_dir, f"{input_basename}.pdf")
@@ -45,7 +55,8 @@ def compile_latex(input_file: str, output_name: str, output_dir: str = ".") -> O
             
             return None
         else:
-            error_msg = f"LaTeX compilation failed:\n{result.stdout}\n{result.stderr}"
+            # Use the error from the second run (more complete)
+            error_msg = f"LaTeX compilation failed:\n{result2.stdout}\n{result2.stderr}"
             raise RuntimeError(error_msg)
             
     except FileNotFoundError:

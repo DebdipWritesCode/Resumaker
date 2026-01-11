@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status, Response
+from typing import List, Tuple
 from bson import ObjectId
 from datetime import datetime
-from app.models.custom_resume import CustomResumeCreate, CustomResumeUpdate, CustomResumeResponse, UserElementsResponse
+import logging
+import traceback
+from app.models.custom_resume import CustomResumeCreate, CustomResumeUpdate, CustomResumeResponse, UserElementsResponse, SelectResumeElementsRequest, SelectResumeElementsResponse, SelectResumeElementsRequest, SelectResumeElementsResponse
 from app.models.heading import HeadingResponse
 from app.models.education import EducationResponse
 from app.models.experience import ExperienceResponse
@@ -11,6 +13,7 @@ from app.models.skill import SkillResponse
 from app.models.volunteer import VolunteerResponse
 from app.models.certification import CertificationResponse
 from app.models.award import AwardResponse
+from app.models.user import UserResponse
 from app.middleware.auth_middleware import get_current_user
 from app.database import (
     get_custom_resumes_collection,
@@ -21,8 +24,20 @@ from app.database import (
     get_skills_collection,
     get_volunteer_experiences_collection,
     get_certifications_collection,
-    get_awards_collection
+    get_awards_collection,
+    get_users_collection
 )
+from app.services.latex_generation_service import generate_latex_from_resume
+from app.services.latex_service import compile_latex
+from app.services.cloudinary_service import upload_latex_from_bytes, upload_pdf, upload_image_from_bytes
+from app.services.pdf_extraction_service import convert_first_page_to_image
+from app.services.openai_service import select_resume_elements_for_job
+import tempfile
+import os
+import uuid
+import shutil
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/custom-resume", tags=["Custom Resume"])
 
@@ -301,6 +316,13 @@ async def get_custom_resumes(current_user: dict = Depends(get_current_user)):
                 volunteers=populated["volunteers"],
                 certifications=populated["certifications"],
                 awards=populated["awards"],
+                latex_url=resume_doc.get("latex_url"),
+                latex_public_id=resume_doc.get("latex_public_id"),
+                cloudinary_url=resume_doc.get("cloudinary_url"),
+                cloudinary_public_id=resume_doc.get("cloudinary_public_id"),
+                pdf_url=resume_doc.get("cloudinary_url"),  # Alias for backward compatibility
+                thumbnail_url=resume_doc.get("thumbnail_url"),
+                thumbnail_public_id=resume_doc.get("thumbnail_public_id"),
                 created_at=resume_doc["created_at"],
                 updated_at=resume_doc["updated_at"]
             )
@@ -369,12 +391,19 @@ async def get_custom_resume(
         volunteers=populated["volunteers"],
         certifications=populated["certifications"],
         awards=populated["awards"],
+        latex_url=resume_doc.get("latex_url"),
+        latex_public_id=resume_doc.get("latex_public_id"),
+        cloudinary_url=resume_doc.get("cloudinary_url"),
+        cloudinary_public_id=resume_doc.get("cloudinary_public_id"),
+        pdf_url=resume_doc.get("cloudinary_url"),  # Alias for backward compatibility
+        thumbnail_url=resume_doc.get("thumbnail_url"),
+        thumbnail_public_id=resume_doc.get("thumbnail_public_id"),
         created_at=resume_doc["created_at"],
         updated_at=resume_doc["updated_at"]
     )
 
 
-@router.post("/", response_model=CustomResumeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_custom_resume(
     resume_data: CustomResumeCreate,
     current_user: dict = Depends(get_current_user)
@@ -450,11 +479,13 @@ async def create_custom_resume(
     
     result = await custom_resumes_collection.insert_one(resume_doc)
     resume_doc["_id"] = result.inserted_id
+    resume_object_id = resume_doc["_id"]
     
-    # Populate references for response
+    # Populate references for LaTeX generation
     populated = await populate_references(resume_doc, user_id)
     
-    return CustomResumeResponse(
+    # Build CustomResumeResponse for PDF generation
+    resume_response = CustomResumeResponse(
         id=str(resume_doc["_id"]),
         user_id=str(resume_doc["user_id"]),
         name=resume_doc["name"],
@@ -466,12 +497,64 @@ async def create_custom_resume(
         volunteers=populated["volunteers"],
         certifications=populated["certifications"],
         awards=populated["awards"],
+        latex_url=resume_doc.get("latex_url"),
+        latex_public_id=resume_doc.get("latex_public_id"),
+        cloudinary_url=resume_doc.get("cloudinary_url"),
+        cloudinary_public_id=resume_doc.get("cloudinary_public_id"),
+        pdf_url=resume_doc.get("cloudinary_url"),  # Alias for backward compatibility
+        thumbnail_url=resume_doc.get("thumbnail_url"),
+        thumbnail_public_id=resume_doc.get("thumbnail_public_id"),
         created_at=resume_doc["created_at"],
         updated_at=resume_doc["updated_at"]
     )
+    
+    # Fetch user data
+    users_collection = get_users_collection()
+    user_doc = await users_collection.find_one({"_id": user_id})
+    if not user_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    user_data = UserResponse(
+        id=str(user_doc["_id"]),
+        email=user_doc["email"],
+        first_name=user_doc["first_name"],
+        last_name=user_doc["last_name"],
+        is_admin=user_doc.get("is_admin", False),
+        is_verified=user_doc.get("is_verified", False),
+        created_at=user_doc["created_at"]
+    )
+    
+    # Generate PDF and upload to Cloudinary
+    try:
+        pdf_bytes, cloudinary_data = await generate_and_upload_resume_pdf(
+            resume_response, user_data, resume_object_id, user_id
+        )
+        
+        # Return PDF as Response
+        filename = f"{resume_data.name.replace(' ', '_')}_resume.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log the full traceback for debugging
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error generating PDF in POST /api/custom-resume/: {str(e)}\n{error_traceback}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate PDF: {str(e)}"
+        )
 
 
-@router.put("/{resume_id}", response_model=CustomResumeResponse)
+@router.put("/{resume_id}")
 async def update_custom_resume(
     resume_id: str,
     resume_data: CustomResumeUpdate,
@@ -579,7 +662,8 @@ async def update_custom_resume(
     updated = await custom_resumes_collection.find_one({"_id": resume_object_id})
     populated = await populate_references(updated, user_id)
     
-    return CustomResumeResponse(
+    # Build CustomResumeResponse for PDF generation
+    resume_response = CustomResumeResponse(
         id=str(updated["_id"]),
         user_id=str(updated["user_id"]),
         name=updated["name"],
@@ -591,9 +675,61 @@ async def update_custom_resume(
         volunteers=populated["volunteers"],
         certifications=populated["certifications"],
         awards=populated["awards"],
+        latex_url=updated.get("latex_url"),
+        latex_public_id=updated.get("latex_public_id"),
+        cloudinary_url=updated.get("cloudinary_url"),
+        cloudinary_public_id=updated.get("cloudinary_public_id"),
+        pdf_url=updated.get("cloudinary_url"),  # Alias for backward compatibility
+        thumbnail_url=updated.get("thumbnail_url"),
+        thumbnail_public_id=updated.get("thumbnail_public_id"),
         created_at=updated["created_at"],
         updated_at=updated["updated_at"]
     )
+    
+    # Fetch user data
+    users_collection = get_users_collection()
+    user_doc = await users_collection.find_one({"_id": user_id})
+    if not user_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    user_data = UserResponse(
+        id=str(user_doc["_id"]),
+        email=user_doc["email"],
+        first_name=user_doc["first_name"],
+        last_name=user_doc["last_name"],
+        is_admin=user_doc.get("is_admin", False),
+        is_verified=user_doc.get("is_verified", False),
+        created_at=user_doc["created_at"]
+    )
+    
+    # Generate PDF and upload to Cloudinary
+    try:
+        pdf_bytes, cloudinary_data = await generate_and_upload_resume_pdf(
+            resume_response, user_data, resume_object_id, user_id
+        )
+        
+        # Return PDF as Response
+        filename = f"{updated['name'].replace(' ', '_')}_resume.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log the full traceback for debugging
+        error_traceback = traceback.format_exc()
+        logging.error(f"Error generating PDF in PUT /api/custom-resume/{resume_id}: {str(e)}\n{error_traceback}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate PDF: {str(e)}"
+        )
 
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -627,6 +763,345 @@ async def delete_custom_resume(
     
     await custom_resumes_collection.delete_one({"_id": resume_object_id})
     return None
+
+
+@router.post("/{resume_id}/generate-pdf")
+async def generate_pdf(
+    resume_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate PDF from custom resume by compiling LaTeX template"""
+    custom_resumes_collection = get_custom_resumes_collection()
+    users_collection = get_users_collection()
+    user_id = ObjectId(current_user["user_id"])
+    
+    # Validate resume_id
+    try:
+        resume_object_id = ObjectId(resume_id)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid custom resume ID format"
+        )
+    
+    # Fetch custom resume
+    resume_doc = await custom_resumes_collection.find_one({
+        "_id": resume_object_id,
+        "user_id": user_id
+    })
+    
+    if not resume_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Custom resume not found"
+        )
+    
+    # Populate references
+    populated = await populate_references(resume_doc, user_id)
+    
+    # Build CustomResumeResponse
+    resume_data = CustomResumeResponse(
+        id=str(resume_doc["_id"]),
+        user_id=str(resume_doc["user_id"]),
+        name=resume_doc["name"],
+        headings=populated["headings"],
+        educations=populated["educations"],
+        experiences=populated["experiences"],
+        projects=populated["projects"],
+        skills=populated["skills"],
+        volunteers=populated["volunteers"],
+        certifications=populated["certifications"],
+        awards=populated["awards"],
+        latex_url=resume_doc.get("latex_url"),
+        latex_public_id=resume_doc.get("latex_public_id"),
+        cloudinary_url=resume_doc.get("cloudinary_url"),
+        cloudinary_public_id=resume_doc.get("cloudinary_public_id"),
+        pdf_url=resume_doc.get("cloudinary_url"),  # Alias for backward compatibility
+        thumbnail_url=resume_doc.get("thumbnail_url"),
+        thumbnail_public_id=resume_doc.get("thumbnail_public_id"),
+        created_at=resume_doc["created_at"],
+        updated_at=resume_doc["updated_at"]
+    )
+    
+    # Fetch user data
+    user_doc = await users_collection.find_one({"_id": user_id})
+    if not user_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    user_data = UserResponse(
+        id=str(user_doc["_id"]),
+        email=user_doc["email"],
+        first_name=user_doc["first_name"],
+        last_name=user_doc["last_name"],
+        is_admin=user_doc.get("is_admin", False),
+        is_verified=user_doc.get("is_verified", False),
+        created_at=user_doc["created_at"]
+    )
+    
+    # Generate PDF and upload to Cloudinary using helper function
+    try:
+        pdf_bytes, cloudinary_data = await generate_and_upload_resume_pdf(
+            resume_data, user_data, resume_object_id, user_id
+        )
+        
+        # Return PDF as Response
+        filename = f"{resume_data.name.replace(' ', '_')}_resume.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log the full traceback for debugging
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error generating PDF in POST /api/custom-resume/{resume_id}/generate-pdf: {str(e)}\n{error_traceback}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate PDF: {str(e)}"
+        )
+
+
+@router.post("/select-elements", response_model=SelectResumeElementsResponse)
+async def select_resume_elements(
+    request: SelectResumeElementsRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Use AI to select relevant resume elements based on job description"""
+    user_id = ObjectId(current_user["user_id"])
+    
+    try:
+        # Fetch all user's projects, awards, certifications, and volunteers
+        projects_collection = get_projects_collection()
+        awards_collection = get_awards_collection()
+        certifications_collection = get_certifications_collection()
+        volunteers_collection = get_volunteer_experiences_collection()
+        
+        # Fetch all elements for the user
+        projects_cursor = projects_collection.find({"user_id": user_id})
+        awards_cursor = awards_collection.find({"user_id": user_id})
+        certifications_cursor = certifications_collection.find({"user_id": user_id})
+        volunteers_cursor = volunteers_collection.find({"user_id": user_id})
+        
+        projects = await projects_cursor.to_list(length=None)
+        awards = await awards_cursor.to_list(length=None)
+        certifications = await certifications_cursor.to_list(length=None)
+        volunteers = await volunteers_cursor.to_list(length=None)
+        
+        # Check if user has any elements
+        if not projects and not awards and not certifications and not volunteers:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No resume elements found. Please add projects, awards, certifications, or volunteer experiences first."
+            )
+        
+        # Call AI service to select elements
+        try:
+            selected_ids, tokens_used = await select_resume_elements_for_job(
+                str(user_id),
+                request.job_description,
+                projects,
+                awards,
+                certifications,
+                volunteers
+            )
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            logger.error(f"Error selecting resume elements with AI: {str(e)}\n{error_traceback}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to select resume elements: {str(e)}"
+            )
+        
+        return SelectResumeElementsResponse(
+            project_ids=selected_ids.get("project_ids", []),
+            award_ids=selected_ids.get("award_ids", []),
+            certification_ids=selected_ids.get("certification_ids", []),
+            volunteer_ids=selected_ids.get("volunteer_ids", []),
+            tokens_used=tokens_used
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error in select_resume_elements route: {str(e)}\n{error_traceback}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process request: {str(e)}"
+        )
+
+
+async def generate_and_upload_resume_pdf(
+    resume_data: CustomResumeResponse,
+    user_data: UserResponse,
+    resume_object_id: ObjectId,
+    user_id: ObjectId
+) -> Tuple[bytes, dict]:
+    """
+    Generate LaTeX, compile to PDF, upload to Cloudinary, and return PDF bytes and Cloudinary data.
+    
+    Returns:
+        tuple: (pdf_bytes, cloudinary_data) where cloudinary_data contains:
+            - latex_url, latex_public_id
+            - cloudinary_url (PDF), cloudinary_public_id (PDF)
+            - thumbnail_url, thumbnail_public_id
+    """
+    custom_resumes_collection = get_custom_resumes_collection()
+    
+    # Generate LaTeX
+    try:
+        logger.info(f"Generating LaTeX for resume {resume_data.id}")
+        latex_content = generate_latex_from_resume(resume_data, user_data)
+        logger.info(f"LaTeX generated successfully, length: {len(latex_content)}")
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error generating LaTeX: {str(e)}\n{error_traceback}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate LaTeX: {str(e)}"
+        )
+    
+    # Create temporary directory for LaTeX compilation
+    temp_dir = None
+    latex_file_path = None
+    pdf_file_path = None
+    
+    try:
+        temp_dir = tempfile.mkdtemp()
+        latex_filename = f"resume_{uuid.uuid4()}.tex"
+        pdf_filename = f"resume_{uuid.uuid4()}"
+        latex_file_path = os.path.join(temp_dir, latex_filename)
+        pdf_file_path = os.path.join(temp_dir, f"{pdf_filename}.pdf")
+        
+        # Write LaTeX to file
+        with open(latex_file_path, "w", encoding="utf-8") as f:
+            f.write(latex_content)
+        
+        # Compile LaTeX to PDF
+        try:
+            logger.info(f"Compiling LaTeX to PDF: {latex_file_path}")
+            compiled_pdf_path = compile_latex(latex_file_path, pdf_filename, temp_dir)
+            if not compiled_pdf_path or not os.path.exists(compiled_pdf_path):
+                logger.error(f"LaTeX compilation failed: PDF not found at {compiled_pdf_path}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="LaTeX compilation failed: PDF was not generated"
+                )
+            pdf_file_path = compiled_pdf_path
+            logger.info(f"PDF compiled successfully: {pdf_file_path}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            logger.error(f"LaTeX compilation error: {str(e)}\n{error_traceback}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"LaTeX compilation failed: {str(e)}"
+            )
+        
+        # Convert first page to image for thumbnail
+        thumbnail_bytes = None
+        try:
+            thumbnail_bytes = convert_first_page_to_image(pdf_file_path, zoom=2.0)
+        except Exception as e:
+            # Log but don't fail if thumbnail generation fails
+            print(f"Warning: Failed to generate thumbnail: {str(e)}")
+        
+        # Upload LaTeX to Cloudinary
+        latex_url = None
+        latex_public_id = None
+        try:
+            logger.info("Uploading LaTeX to Cloudinary")
+            latex_bytes = latex_content.encode("utf-8")
+            latex_filename_cloud = f"{uuid.uuid4()}.tex"
+            latex_result = await upload_latex_from_bytes(latex_bytes, str(user_id), latex_filename_cloud)
+            latex_url = latex_result["url"]
+            latex_public_id = latex_result["public_id"]
+            logger.info(f"LaTeX uploaded successfully: {latex_url}")
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            logger.error(f"Error uploading LaTeX to Cloudinary: {str(e)}\n{error_traceback}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload LaTeX to Cloudinary: {str(e)}"
+            )
+        
+        # Upload PDF to Cloudinary
+        cloudinary_url = None
+        cloudinary_public_id = None
+        try:
+            logger.info(f"Uploading PDF to Cloudinary: {pdf_file_path}")
+            pdf_filename_cloud = f"{uuid.uuid4()}.pdf"
+            pdf_result = await upload_pdf(pdf_file_path, str(user_id), pdf_filename_cloud)
+            cloudinary_url = pdf_result["url"]
+            cloudinary_public_id = pdf_result["public_id"]
+            logger.info(f"PDF uploaded successfully: {cloudinary_url}")
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            logger.error(f"Error uploading PDF to Cloudinary: {str(e)}\n{error_traceback}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload PDF to Cloudinary: {str(e)}"
+            )
+        
+        # Upload thumbnail to Cloudinary
+        thumbnail_url = None
+        thumbnail_public_id = None
+        if thumbnail_bytes:
+            try:
+                thumbnail_filename_cloud = f"{uuid.uuid4()}.png"
+                thumbnail_result = await upload_image_from_bytes(thumbnail_bytes, str(user_id), thumbnail_filename_cloud)
+                thumbnail_url = thumbnail_result["url"]
+                thumbnail_public_id = thumbnail_result["public_id"]
+            except Exception as e:
+                # Log but don't fail if thumbnail upload fails
+                print(f"Warning: Failed to upload thumbnail to Cloudinary: {str(e)}")
+        
+        # Update custom resume document with URLs and public IDs
+        update_data = {
+            "latex_url": latex_url,
+            "latex_public_id": latex_public_id,
+            "cloudinary_url": cloudinary_url,
+            "cloudinary_public_id": cloudinary_public_id,
+            "thumbnail_url": thumbnail_url,
+            "thumbnail_public_id": thumbnail_public_id,
+            "updated_at": datetime.utcnow()
+        }
+        
+        await custom_resumes_collection.update_one(
+            {"_id": resume_object_id},
+            {"$set": update_data}
+        )
+        
+        # Read PDF bytes for response
+        with open(pdf_file_path, "rb") as f:
+            pdf_bytes = f.read()
+        
+        cloudinary_data = {
+            "latex_url": latex_url,
+            "latex_public_id": latex_public_id,
+            "cloudinary_url": cloudinary_url,
+            "cloudinary_public_id": cloudinary_public_id,
+            "thumbnail_url": thumbnail_url,
+            "thumbnail_public_id": thumbnail_public_id
+        }
+        
+        return pdf_bytes, cloudinary_data
+    
+    finally:
+        # Clean up temporary files
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception as e:
+                print(f"Warning: Failed to clean up temporary directory: {str(e)}")
 
 
 async def fetch_all_user_elements(user_id: ObjectId) -> dict:

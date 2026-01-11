@@ -157,7 +157,7 @@ const History = () => {
                 className="group cursor-pointer rounded-lg border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:border-primary/50"
               >
                 {/* Thumbnail */}
-                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-lg bg-muted">
+                <div className="relative aspect-3/4 w-full overflow-hidden rounded-t-lg bg-muted">
                   {resume.thumbnail_url ? (
                     <img
                       src={resume.thumbnail_url}

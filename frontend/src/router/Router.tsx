@@ -22,6 +22,7 @@ import Skills from '@/pages/Skills'
 import Certifications from '@/pages/Certifications'
 import Awards from '@/pages/Awards'
 import VolunteerExperiences from '@/pages/VolunteerExperiences'
+import PublicResume from '@/pages/PublicResume'
 
 const Router = () => {
   return (
@@ -31,6 +32,7 @@ const Router = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/resume/:id" element={<PublicResume />} />
 
       <Route
         element={
