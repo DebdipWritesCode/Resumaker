@@ -6,13 +6,39 @@ import {
   Code, 
   Award, 
   Trophy, 
-  HeartHandshake 
+  HeartHandshake,
+  Upload,
+  FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
+import { useState, useRef } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { toast } from 'react-toastify'
+import api from '@/api/axios'
+import { ExtractedResumeReviewDialog } from '@/components/resume-extraction/ExtractedResumeReviewDialog'
+import type { ExtractedResumeData } from '@/components/resume-extraction/types'
 
 const MyElements = () => {
   const navigate = useNavigate()
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Review dialog state
+  const [extractedData, setExtractedData] = useState<ExtractedResumeData | null>(null)
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+
   const elements = [
     {
       id: 'heading',
@@ -101,6 +127,123 @@ const MyElements = () => {
     }
   }
 
+  const handleOpenUploadDialog = () => {
+    setIsUploadDialogOpen(true)
+    setSelectedFile(null)
+    setPreviewUrl(null)
+  }
+
+  const handleCloseUploadDialog = () => {
+    setIsUploadDialogOpen(false)
+    setSelectedFile(null)
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+      setPreviewUrl(null)
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        toast.error('Please upload a PDF file')
+        return
+      }
+      
+      // Validate file size (e.g., max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File size must be less than 10MB')
+        return
+      }
+
+      setSelectedFile(file)
+      
+      // Create preview URL
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a PDF file first')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+
+      const response = await api.post('/api/ai/extract-resume', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      console.log('Response:', response.data)
+      
+      // Store extracted data and PDF URL
+      if (response.data?.extracted_data) {
+        setExtractedData(response.data.extracted_data)
+        // Store PDF URL from response (could be pdf_url, resume_url, or file_url)
+        // Fallback to previewUrl (blob URL) if API doesn't return a URL
+        const url = response.data.pdf_url || response.data.resume_url || response.data.file_url || previewUrl || null
+        setPdfUrl(url)
+        // Close upload dialog but don't revoke previewUrl yet (we'll use it in review dialog)
+        setIsUploadDialogOpen(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+        setIsReviewDialogOpen(true)
+      } else {
+        toast.error('No extracted data found in response')
+      }
+    } catch (error: any) {
+      console.error('Error:', error)
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Failed to upload resume'
+      toast.error(errorMessage)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleCloseReviewDialog = () => {
+    setIsReviewDialogOpen(false)
+    setExtractedData(null)
+    setPdfUrl(null)
+    // Now clean up the file and preview URL
+    setSelectedFile(null)
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+      setPreviewUrl(null)
+    }
+  }
+
+  // Parse phone number from format +91-827-4925-985
+  const parsePhoneNumber = (mobile: string | null): { countryCode: string; phoneNumber: string } => {
+    if (!mobile) return { countryCode: '+91', phoneNumber: '' }
+    
+    const parts = mobile.split('-')
+    if (parts.length >= 4) {
+      const countryCode = parts[0] // +91
+      const phoneNumber = parts.slice(1).join('').replace(/\D/g, '')
+      return { countryCode, phoneNumber }
+    }
+    return { countryCode: '+91', phoneNumber: '' }
+  }
+
+  // Format phone number for backend: +91-827-4925-985
+  const formatPhoneNumber = (countryCode: string, phoneNumber: string): string => {
+    const digits = phoneNumber.replace(/\D/g, '')
+    if (digits.length !== 10) return ''
+    return `${countryCode}-${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <div className="mb-8">
@@ -112,10 +255,7 @@ const MyElements = () => {
           <Button
             variant="default"
             className="w-full sm:w-auto shrink-0"
-            onClick={() => {
-              // TODO: Implement Add From Resume functionality
-              console.log('Add From Resume clicked')
-            }}
+            onClick={handleOpenUploadDialog}
           >
             Add From Resume
           </Button>
@@ -145,6 +285,107 @@ const MyElements = () => {
           )
         })}
       </div>
+
+      {/* Upload Resume Dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleCloseUploadDialog()
+        } else {
+          setIsUploadDialogOpen(true)
+        }
+      }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Upload Resume</DialogTitle>
+            <DialogDescription>
+              Upload your resume PDF to extract and populate your resume elements automatically.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* File Input Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-center w-full">
+                <label
+                  htmlFor="resume-upload"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">PDF only (MAX. 10MB)</p>
+                  </div>
+                  <input
+                    id="resume-upload"
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                  />
+                </label>
+              </div>
+
+              {selectedFile && (
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium flex-1 truncate">{selectedFile.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* PDF Preview Section */}
+            {previewUrl && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Preview (First Page)</h3>
+                <div className="border rounded-lg overflow-hidden bg-muted/30">
+                  <iframe
+                    src={`${previewUrl}#page=1`}
+                    className="w-full h-[500px]"
+                    title="PDF Preview"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseUploadDialog}
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUpload}
+              disabled={!selectedFile || isUploading}
+            >
+              {isUploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Extracted Resume Dialog */}
+      {extractedData && (
+        <ExtractedResumeReviewDialog
+          open={isReviewDialogOpen}
+          onOpenChange={setIsReviewDialogOpen}
+          extractedData={extractedData}
+          onClose={handleCloseReviewDialog}
+          parsePhoneNumber={parsePhoneNumber}
+          formatPhoneNumber={formatPhoneNumber}
+          pdfUrl={pdfUrl}
+        />
+      )}
     </div>
   )
 }

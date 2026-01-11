@@ -29,7 +29,7 @@ import { Plus, Info, Trophy, Edit2, Trash2, Calendar } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 // Validation helpers
-const titleRegex = /^[a-zA-Z0-9\s,\-]+$/
+const titleRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
 const dateRegex = /^[a-zA-Z0-9\s]+$/
 
 const awardSchema = z.object({
@@ -37,12 +37,12 @@ const awardSchema = z.object({
     .string()
     .min(1, 'Title is required')
     .max(120, 'Title must be at most 120 characters')
-    .regex(titleRegex, 'Title can only contain alphabets, numbers, spaces, commas, and hyphens'),
+    .regex(titleRegex, 'Title can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —'),
   date: z
     .string()
     .min(1, 'Date is required')
     .max(15, 'Date must be at most 15 characters')
-    .regex(dateRegex, 'Date can only contain alphabets, numbers, and spaces'),
+    .regex(dateRegex, 'Date can only contain A-Z, a-z, 0-9, spaces'),
 })
 
 type AwardFormValues = z.infer<typeof awardSchema>
@@ -293,7 +293,7 @@ const Awards = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 120 characters. Only alphabets, numbers, spaces, commas, and hyphens allowed.
+                        Maximum 120 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, -, –, —
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -325,7 +325,7 @@ const Awards = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 15 characters. Only alphabets, numbers, and spaces allowed.
+                        Maximum 15 characters. Allowed: A-Z, a-z, 0-9, spaces
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

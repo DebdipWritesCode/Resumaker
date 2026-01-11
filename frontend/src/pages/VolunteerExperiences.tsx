@@ -30,43 +30,43 @@ import { Plus, Info, HeartHandshake, Edit2, Trash2, Calendar, Building2 } from '
 import { toast } from 'react-toastify'
 
 // Validation helpers
-const positionRegex = /^[a-zA-Z0-9\s,\-&]+$/
-const organizationRegex = /^[a-zA-Z0-9\s,\-]+$/
+const positionRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014&]+$/
+const organizationRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
 const locationRegex = /^[a-zA-Z0-9\s,]+$/
 const dateRegex = /^[a-zA-Z0-9\s]+$/
-const descriptionRegex = /^[a-zA-Z0-9\s,%.\-+()xX]+$/
+const descriptionRegex = /^[a-zA-Z0-9\s,%.\-\u2013\u2014+()xX\u00D7]+$/
 
 const volunteerSchema = z.object({
   position: z
     .string()
     .min(1, 'Position is required')
     .max(50, 'Position must be at most 50 characters')
-    .regex(positionRegex, 'Position can only contain alphabets, numbers, spaces, commas, hyphens, and & symbols'),
+    .regex(positionRegex, 'Position can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —, &'),
   organization: z
     .string()
     .min(1, 'Organization is required')
     .max(100, 'Organization must be at most 100 characters')
-    .regex(organizationRegex, 'Organization can only contain alphabets, numbers, spaces, commas, and hyphens'),
+    .regex(organizationRegex, 'Organization can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —'),
   location: z
     .string()
     .min(1, 'Location is required')
     .max(60, 'Location must be at most 60 characters')
-    .regex(locationRegex, 'Location can only contain alphabets, numbers, spaces, and commas'),
+    .regex(locationRegex, 'Location can only contain A-Z, a-z, 0-9, spaces, ,'),
   description: z
     .string()
     .min(1, 'Description is required')
     .max(250, 'Description must be at most 250 characters')
-    .regex(descriptionRegex, 'Description can only contain alphabets, numbers, spaces, commas, periods, hyphens, plus signs, parentheses, multiply symbol (x), and % symbol'),
+    .regex(descriptionRegex, 'Description can only contain A-Z, a-z, 0-9, spaces, ,, ., -, –, —, +, (), x, X, ×, %'),
   startDate: z
     .string()
     .min(1, 'Start date is required')
     .max(15, 'Start date must be at most 15 characters')
-    .regex(dateRegex, 'Start date can only contain alphabets, numbers, and spaces'),
+    .regex(dateRegex, 'Start date can only contain A-Z, a-z, 0-9, spaces'),
   endDate: z
     .string()
     .min(1, 'End date is required')
     .max(15, 'End date must be at most 15 characters')
-    .regex(dateRegex, 'End date can only contain alphabets, numbers, and spaces'),
+    .regex(dateRegex, 'End date can only contain A-Z, a-z, 0-9, spaces'),
 })
 
 type VolunteerFormValues = z.infer<typeof volunteerSchema>
@@ -371,7 +371,7 @@ const VolunteerExperiences = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 50 characters. Only alphabets, numbers, spaces, commas, hyphens, and & symbols allowed.
+                        Maximum 50 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, -, –, —, &
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -397,7 +397,7 @@ const VolunteerExperiences = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 100 characters. Only alphabets, numbers, spaces, commas, and hyphens allowed.
+                        Maximum 100 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, -, –, —
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -429,7 +429,7 @@ const VolunteerExperiences = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 60 characters. Only alphabets, numbers, spaces, and commas allowed.
+                        Maximum 60 characters. Allowed: A-Z, a-z, 0-9, spaces, ,
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -456,7 +456,7 @@ const VolunteerExperiences = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 250 characters. Only alphabets, numbers, spaces, commas, periods, hyphens, plus signs, parentheses, multiply symbol (x), and % symbol allowed.
+                        Maximum 250 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, ., -, –, —, +, (), x, X, ×, %
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -489,7 +489,7 @@ const VolunteerExperiences = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum 15 characters. Only alphabets, numbers, and spaces allowed.
+                          Maximum 15 characters. Allowed: A-Z, a-z, 0-9, spaces
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -510,7 +510,7 @@ const VolunteerExperiences = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum 15 characters. Can be "Present" or date. Only alphabets, numbers, and spaces allowed.
+                          Maximum 15 characters. Can be "Present" or date. Allowed: A-Z, a-z, 0-9, spaces
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

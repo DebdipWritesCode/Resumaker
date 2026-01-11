@@ -1,14 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from typing import List
 from app.models.ai import (
     GenerateSubpointsRequest,
     GenerateSubpointsResponse,
     RephraseTitleRequest,
     RephraseTitleResponse,
     RephraseSubpointsRequest,
-    RephraseSubpointsResponse
+    RephraseSubpointsResponse,
+    ExtractResumeResponse,
+    SaveExtractedResumeRequest,
+    SaveExtractedResumeResponse,
+    ExtractedResumeData
 )
+from app.models.uploaded_resume import UploadedResumeResponse
 from app.services.openai_service import generate_subpoints, rephrase_title, rephrase_subpoints
+from app.services.pdf_extraction_service import extract_text_from_pdf, extract_resume_data_with_openai, convert_first_page_to_image
+from app.services.cloudinary_service import upload_pdf_from_bytes, upload_image_from_bytes
+from app.services.resume_save_service import save_extracted_resume_data
 from app.middleware.auth_middleware import get_current_user
+from app.database import get_uploaded_resumes_collection
+from bson import ObjectId
+from datetime import datetime
+import tempfile
+import os
+import uuid
 
 router = APIRouter(prefix="/api/ai", tags=["AI"])
 
@@ -80,5 +95,207 @@ async def rephrase_subpoints_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
+        )
+
+@router.post("/extract-resume", response_model=ExtractResumeResponse)
+async def extract_resume_endpoint(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Extract structured resume data from uploaded PDF"""
+    # Validate file is PDF
+    if not file.filename or not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be a PDF"
+        )
+    
+    temp_file_path = None
+    try:
+        # Read file content
+        file_bytes = await file.read()
+        
+        # Create temporary file for pdfplumber
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+            temp_file.write(file_bytes)
+            temp_file_path = temp_file.name
+        
+        # Extract text from PDF
+        try:
+            pdf_text = extract_text_from_pdf(temp_file_path)
+            if not pdf_text or not pdf_text.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Could not extract text from PDF. The PDF might be empty or corrupted."
+                )
+        except HTTPException:
+            raise  # Re-raise HTTPException as-is
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to extract text from PDF: {str(e)}"
+            )
+        
+        # Extract structured data using OpenAI
+        try:
+            extracted_data, tokens_used = await extract_resume_data_with_openai(pdf_text)
+        except HTTPException:
+            raise  # Re-raise HTTPException as-is
+        except Exception as e:
+            # Check if it's a validation error (422) or general error (500)
+            error_msg = str(e)
+            if "validation" in error_msg.lower() or "validate" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Failed to validate extracted resume data: {error_msg}"
+                )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to extract resume data with OpenAI: {error_msg}"
+            )
+        
+        # Only proceed with Cloudinary and DB if OpenAI extraction succeeded
+        user_id = current_user["user_id"]
+        filename = f"{uuid.uuid4()}.pdf"
+        
+        # Upload PDF to Cloudinary
+        try:
+            cloudinary_result = await upload_pdf_from_bytes(file_bytes, user_id, filename)
+            cloudinary_url = cloudinary_result["url"]
+            cloudinary_public_id = cloudinary_result["public_id"]
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload PDF to Cloudinary: {str(e)}"
+            )
+        
+        # Generate and upload thumbnail
+        thumbnail_url = None
+        thumbnail_public_id = None
+        try:
+            # Convert first page to image
+            thumbnail_bytes = convert_first_page_to_image(temp_file_path, zoom=2.0)
+            
+            # Upload thumbnail to Cloudinary
+            thumbnail_filename = f"{uuid.uuid4()}.png"
+            thumbnail_result = await upload_image_from_bytes(thumbnail_bytes, user_id, thumbnail_filename)
+            thumbnail_url = thumbnail_result["url"]
+            thumbnail_public_id = thumbnail_result["public_id"]
+        except Exception as e:
+            # Log error but don't fail the entire request if thumbnail generation fails
+            # Thumbnail is optional for UX, not critical for functionality
+            print(f"Warning: Failed to generate thumbnail: {str(e)}")
+        
+        # Save extraction record to database
+        try:
+            uploaded_resumes_collection = get_uploaded_resumes_collection()
+            # Convert Pydantic model to dict for storage
+            extracted_data_dict = extracted_data.model_dump()
+            
+            result = await uploaded_resumes_collection.insert_one({
+                "user_id": ObjectId(user_id),
+                "cloudinary_url": cloudinary_url,
+                "cloudinary_public_id": cloudinary_public_id,
+                "thumbnail_url": thumbnail_url,
+                "thumbnail_public_id": thumbnail_public_id,
+                "extracted_data": extracted_data_dict,
+                "uploaded_at": datetime.utcnow(),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            })
+            extraction_id = str(result.inserted_id)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to save extraction record to database: {str(e)}"
+            )
+        
+        return ExtractResumeResponse(
+            extracted_data=extracted_data,
+            extraction_id=extraction_id,
+            resume_url=cloudinary_url,
+            thumbnail_url=thumbnail_url or "",  # Return empty string if thumbnail generation failed
+            tokens_used=tokens_used
+        )
+    
+    finally:
+        # Clean up temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except Exception:
+                pass  # Ignore cleanup errors
+
+@router.post("/save-extracted-resume", response_model=SaveExtractedResumeResponse, status_code=status.HTTP_201_CREATED)
+async def save_extracted_resume_endpoint(
+    request: SaveExtractedResumeRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Save extracted resume data to database collections"""
+    try:
+        result = await save_extracted_resume_data(
+            request.extracted_data,
+            current_user["user_id"]
+        )
+        
+        return SaveExtractedResumeResponse(
+            heading_id=result.get("heading_id"),
+            experience_ids=result.get("experience_ids", []),
+            project_ids=result.get("project_ids", []),
+            education_ids=result.get("education_ids", []),
+            skill_ids=result.get("skill_ids", []),
+            certification_ids=result.get("certification_ids", []),
+            award_ids=result.get("award_ids", []),
+            volunteer_ids=result.get("volunteer_ids", []),
+            message="Resume data saved successfully"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save resume data: {str(e)}"
+        )
+
+@router.get("/uploaded-resumes", response_model=List[UploadedResumeResponse])
+async def get_uploaded_resumes(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all uploaded resumes for the current user"""
+    try:
+        uploaded_resumes_collection = get_uploaded_resumes_collection()
+        user_id = current_user["user_id"]
+        
+        # Find all uploaded resumes for the user, sorted by most recent first
+        cursor = uploaded_resumes_collection.find(
+            {"user_id": ObjectId(user_id)}
+        ).sort("uploaded_at", -1)
+        
+        resumes = await cursor.to_list(length=None)
+        
+        # Convert to response models
+        result = []
+        for resume in resumes:
+            # Convert extracted_data dict back to ExtractedResumeData model
+            extracted_data = ExtractedResumeData(**resume["extracted_data"])
+            
+            result.append(
+                UploadedResumeResponse(
+                    id=str(resume["_id"]),
+                    user_id=str(resume["user_id"]),
+                    cloudinary_url=resume["cloudinary_url"],
+                    cloudinary_public_id=resume["cloudinary_public_id"],
+                    thumbnail_url=resume.get("thumbnail_url"),
+                    thumbnail_public_id=resume.get("thumbnail_public_id"),
+                    extracted_data=extracted_data,
+                    uploaded_at=resume["uploaded_at"],
+                    created_at=resume["created_at"],
+                    updated_at=resume["updated_at"]
+                )
+            )
+        
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch uploaded resumes: {str(e)}"
         )
 

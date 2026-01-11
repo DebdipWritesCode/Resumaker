@@ -30,24 +30,24 @@ import { Plus, X, Info, Briefcase, Edit2, Trash2, Calendar, FolderKanban } from 
 import { toast } from 'react-toastify'
 
 // Validation helpers
-const companyRegex = /^[a-zA-Z0-9\s,\-]+$/
+const companyRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
 const locationRegex = /^[a-zA-Z0-9\s,]+$/
-const positionRegex = /^[a-zA-Z0-9\s,]+$/
+const positionRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
 const dateRegex = /^[a-zA-Z0-9\s]+$/
 const projectTitleRegex = /^[a-zA-Z0-9\s,]+$/
-const projectDescriptionRegex = /^[a-zA-Z0-9\s,%.\-+()xX]+$/
+const projectDescriptionRegex = /^[a-zA-Z0-9\s,%.\-\u2013\u2014+()xX\u00D7]+$/
 
 const projectItemSchema = z.object({
   title: z
     .string()
     .min(1, 'Project title is required')
     .max(40, 'Project title must be at most 40 characters')
-    .regex(projectTitleRegex, 'Project title can only contain alphabets, numbers, spaces, and commas'),
+    .regex(projectTitleRegex, 'Project title can only contain A-Z, a-z, 0-9, spaces, ,'),
   description: z
     .string()
     .min(1, 'Project description is required')
     .max(250, 'Project description must be at most 250 characters')
-    .regex(projectDescriptionRegex, 'Project description can only contain alphabets, numbers, spaces, commas, periods, hyphens, plus signs, parentheses, multiply symbol (x), and % symbol'),
+    .regex(projectDescriptionRegex, 'Project description can only contain A-Z, a-z, 0-9, spaces, ,, ., -, –, —, +, (), x, X, ×, %'),
 })
 
 const experienceSchema = z.object({
@@ -55,27 +55,27 @@ const experienceSchema = z.object({
     .string()
     .min(1, 'Company is required')
     .max(50, 'Company must be at most 50 characters')
-    .regex(companyRegex, 'Company can only contain alphabets, numbers, spaces, commas, and hyphens'),
+    .regex(companyRegex, 'Company can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —'),
   location: z
     .string()
     .min(1, 'Location is required')
     .max(60, 'Location must be at most 60 characters')
-    .regex(locationRegex, 'Location can only contain alphabets, numbers, spaces, and commas'),
+    .regex(locationRegex, 'Location can only contain A-Z, a-z, 0-9, spaces, ,'),
   position: z
     .string()
     .min(1, 'Position is required')
     .max(40, 'Position must be at most 40 characters')
-    .regex(positionRegex, 'Position can only contain alphabets, numbers, spaces, and commas'),
+    .regex(positionRegex, 'Position can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —'),
   startDate: z
     .string()
     .min(1, 'Start date is required')
     .max(15, 'Start date must be at most 15 characters')
-    .regex(dateRegex, 'Start date can only contain alphabets, numbers, and spaces'),
+    .regex(dateRegex, 'Start date can only contain A-Z, a-z, 0-9, spaces'),
   endDate: z
     .string()
     .min(1, 'End date is required')
     .max(15, 'End date must be at most 15 characters')
-    .regex(dateRegex, 'End date can only contain alphabets, numbers, and spaces'),
+    .regex(dateRegex, 'End date can only contain A-Z, a-z, 0-9, spaces'),
   projects: z.array(projectItemSchema).optional(),
 })
 
@@ -414,7 +414,7 @@ const Experience = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 50 characters. Only alphabets, numbers, spaces, commas, and hyphens allowed.
+                        Maximum 50 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, -, –, —
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -446,7 +446,7 @@ const Experience = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 60 characters. Only alphabets, numbers, spaces, and commas allowed.
+                        Maximum 60 characters. Allowed: A-Z, a-z, 0-9, spaces, ,
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -505,7 +505,7 @@ const Experience = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum 15 characters. Only alphabets, numbers, and spaces allowed.
+                          Maximum 15 characters. Allowed: A-Z, a-z, 0-9, spaces
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -526,7 +526,7 @@ const Experience = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum 15 characters. Can be "Present" or date. Only alphabets, numbers, and spaces allowed.
+                          Maximum 15 characters. Can be "Present" or date. Allowed: A-Z, a-z, 0-9, spaces
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -587,7 +587,7 @@ const Experience = () => {
                             />
                           </FormControl>
                           <FormDescription>
-                            Maximum 40 characters. Only alphabets, numbers, spaces, and commas allowed.
+                            Maximum 40 characters. Allowed: A-Z, a-z, 0-9, spaces, ,
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -609,7 +609,7 @@ const Experience = () => {
                             />
                           </FormControl>
                           <FormDescription>
-                            Maximum 250 characters. Can contain alphabets, numbers, spaces, commas, periods, hyphens, plus signs, parentheses, multiply symbol (x), and % symbol for metrics (e.g., "increased by 25%" or "4x faster").
+                            Maximum 250 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, ., -, –, —, +, (), x, X, ×, % (e.g., "increased by 25%" or "4x faster" or "4× faster").
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

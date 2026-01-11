@@ -29,27 +29,27 @@ import { Plus, Info, Award, Edit2, Trash2, Calendar, Link as LinkIcon, User } fr
 import { toast } from 'react-toastify'
 
 // Validation helpers
-const titleRegex = /^[a-zA-Z0-9\s,\-+&]+$/
+const titleRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014+&()]+$/
 const dateRegex = /^[a-zA-Z0-9\s]+$/
 const instructorRegex = /^[a-zA-Z\s,]+$/
-const platformRegex = /^[a-zA-Z0-9\s,\-]+$/
+const platformRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
 
 const certificationSchema = z.object({
   title: z
     .string()
     .min(1, 'Title is required')
     .max(80, 'Title must be at most 80 characters')
-    .regex(titleRegex, 'Title can only contain alphabets, numbers, spaces, commas, hyphens, plus signs, and & symbols'),
+    .regex(titleRegex, 'Title can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —, +, &, ()'),
   startDate: z
     .string()
     .min(1, 'Start date is required')
     .max(15, 'Start date must be at most 15 characters')
-    .regex(dateRegex, 'Start date can only contain alphabets, numbers, and spaces'),
+    .regex(dateRegex, 'Start date can only contain A-Z, a-z, 0-9, spaces'),
   endDate: z
     .string()
     .min(1, 'End date is required')
     .max(15, 'End date must be at most 15 characters')
-    .regex(dateRegex, 'End date can only contain alphabets, numbers, and spaces'),
+    .regex(dateRegex, 'End date can only contain A-Z, a-z, 0-9, spaces'),
   instructor: z
     .string()
     .optional()
@@ -58,13 +58,13 @@ const certificationSchema = z.object({
         if (!val || val === '') return true
         return instructorRegex.test(val)
       },
-      { message: 'Instructor can only contain alphabets, spaces, and commas' }
+      { message: 'Instructor can only contain A-Z, a-z, spaces, ,' }
     ),
   platform: z
     .string()
     .min(1, 'Platform is required')
     .max(20, 'Platform must be at most 20 characters')
-    .regex(platformRegex, 'Platform can only contain alphabets, numbers, spaces, commas, and hyphens'),
+    .regex(platformRegex, 'Platform can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —'),
   certificationLink: z
     .string()
     .optional()
@@ -398,7 +398,7 @@ const Certifications = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 80 characters. Only alphabets, numbers, spaces, commas, hyphens, plus signs, and & symbols allowed.
+                        Maximum 80 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, -, –, —, +, &, ()
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -431,7 +431,7 @@ const Certifications = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum 15 characters. Only alphabets, numbers, and spaces allowed.
+                          Maximum 15 characters. Allowed: A-Z, a-z, 0-9, spaces
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -452,7 +452,7 @@ const Certifications = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum 15 characters. Can be "Present" or date. Only alphabets, numbers, and spaces allowed.
+                          Maximum 15 characters. Can be "Present" or date. Allowed: A-Z, a-z, 0-9, spaces
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -478,7 +478,7 @@ const Certifications = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Optional. Only alphabets, spaces, and commas allowed.
+                        Optional. Allowed: A-Z, a-z, spaces, ,
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -504,7 +504,7 @@ const Certifications = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 20 characters. Only alphabets, numbers, spaces, commas, and hyphens allowed.
+                        Maximum 20 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, -, –, —
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

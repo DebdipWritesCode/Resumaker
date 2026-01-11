@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-day-picker/dist/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -152,4 +153,67 @@
 
 button {
   @apply cursor-pointer;
+}
+
+/* Custom Scrollbar Styles */
+@layer utilities {
+  /* Modern scrollbar for webkit browsers (Chrome, Edge, Safari) */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* Horizontal scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar:horizontal {
+    height: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: oklch(0.45 0.08 280 / 0.4);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: all 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.55 0.12 280 / 0.6);
+    background-clip: padding-box;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: oklch(0.6 0.14 280 / 0.7);
+    background-clip: padding-box;
+  }
+
+  /* Dark mode scrollbar - more visible with primary color accent */
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: oklch(0.5 0.1 280 / 0.5);
+    background-clip: padding-box;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.65 0.14 280 / 0.7);
+    background-clip: padding-box;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: oklch(0.7 0.16 280 / 0.8);
+    background-clip: padding-box;
+  }
+
+  /* Firefox scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.45 0.08 280 / 0.4) transparent;
+  }
+
+  .dark .custom-scrollbar {
+    scrollbar-color: oklch(0.5 0.1 280 / 0.5) transparent;
+  }
 }

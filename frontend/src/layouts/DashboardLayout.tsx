@@ -148,7 +148,7 @@ const SidebarContent = ({
           <div className="flex items-center justify-between gap-2">
             <SheetHeader>
               <h1 className="text-3xl text-blue-900 dark:text-blue-100 font-normal font-heading">
-                Resume Customizer
+                Resumaker
               </h1>
             </SheetHeader>
             <Button
@@ -158,7 +158,7 @@ const SidebarContent = ({
               className="shrink-0"
               aria-label="Collapse sidebar"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-5 w-5 sm:block hidden" />
             </Button>
           </div>
         ) : (
@@ -170,10 +170,10 @@ const SidebarContent = ({
               className="shrink-0"
               aria-label="Expand sidebar"
             >
-              <ChevronLeft className="h-5 w-5 rotate-180" />
+              <ChevronLeft className="h-5 w-5 rotate-180 sm:block hidden" />
             </Button>
             <h1 className="text-2xl text-blue-900 dark:text-blue-100 font-normal font-heading">
-              RC
+              RM
             </h1>
           </div>
         )}

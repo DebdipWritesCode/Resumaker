@@ -30,6 +30,44 @@ async def upload_pdf(file_path: str, user_id: str, filename: str) -> dict:
     except Exception as e:
         raise Exception(f"Failed to upload PDF to Cloudinary: {str(e)}")
 
+async def upload_pdf_from_bytes(file_bytes: bytes, user_id: str, filename: str) -> dict:
+    """Upload PDF to Cloudinary from bytes"""
+    try:
+        import io
+        file_obj = io.BytesIO(file_bytes)
+        result = cloudinary.uploader.upload(
+            file_obj,
+            resource_type="raw",
+            folder=f"resumes/{user_id}",
+            public_id=filename,
+            format="pdf"
+        )
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"]
+        }
+    except Exception as e:
+        raise Exception(f"Failed to upload PDF to Cloudinary: {str(e)}")
+
+async def upload_image_from_bytes(image_bytes: bytes, user_id: str, filename: str) -> dict:
+    """Upload image to Cloudinary from bytes"""
+    try:
+        import io
+        file_obj = io.BytesIO(image_bytes)
+        result = cloudinary.uploader.upload(
+            file_obj,
+            resource_type="image",
+            folder=f"resumes/{user_id}/thumbnails",
+            public_id=filename,
+            format="png"
+        )
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"]
+        }
+    except Exception as e:
+        raise Exception(f"Failed to upload image to Cloudinary: {str(e)}")
+
 async def delete_pdf(public_id: str):
     """Delete PDF from Cloudinary"""
     try:

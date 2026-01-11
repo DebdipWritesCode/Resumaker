@@ -31,7 +31,7 @@ import { toast } from 'react-toastify'
 // Validation helpers
 const institutionRegex = /^[a-zA-Z0-9\s,]+$/
 const locationRegex = /^[a-zA-Z0-9\s,]+$/
-const degreePartRegex = /^[a-zA-Z0-9\s,]+$/
+const degreePartRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014()]+$/
 const courseRegex = /^[a-zA-Z0-9\s,]+$/
 
 const courseSchema = z.object({
@@ -39,7 +39,7 @@ const courseSchema = z.object({
     .string()
     .min(1, 'Course name is required')
     .max(30, 'Course name must be at most 30 characters')
-    .regex(courseRegex, 'Course name can only contain alphabets, numbers, spaces, and commas'),
+    .regex(courseRegex, 'Course name can only contain A-Z, a-z, 0-9, spaces, ,'),
 })
 
 const educationSchema = z
@@ -48,26 +48,26 @@ const educationSchema = z
       .string()
       .min(1, 'Institution is required')
       .max(100, 'Institution must be at most 100 characters')
-      .regex(institutionRegex, 'Institution can only contain alphabets, numbers, spaces, and commas'),
+      .regex(institutionRegex, 'Institution can only contain A-Z, a-z, 0-9, spaces, ,'),
     location: z
       .string()
       .min(1, 'Location is required')
       .max(50, 'Location must be at most 50 characters')
-      .regex(locationRegex, 'Location can only contain alphabets, numbers, spaces, and commas'),
+      .regex(locationRegex, 'Location can only contain A-Z, a-z, 0-9, spaces, ,'),
     degreeProgram: z
       .string()
       .min(1, 'Degree program is required')
       .max(100, 'Degree program must be at most 100 characters')
-      .regex(degreePartRegex, 'Degree program can only contain alphabets, numbers, spaces, and commas'),
+      .regex(degreePartRegex, 'Degree program can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —, ()'),
     degreeMajor: z
       .string()
       .min(1, 'Major/Subject is required')
       .max(100, 'Major/Subject must be at most 100 characters')
-      .regex(degreePartRegex, 'Major/Subject can only contain alphabets, numbers, spaces, and commas'),
+      .regex(degreePartRegex, 'Major/Subject can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —, ()'),
     degreeSpecialization: z
       .string()
       .max(100, 'Specialization must be at most 100 characters')
-      .regex(degreePartRegex, 'Specialization can only contain alphabets, numbers, spaces, and commas')
+      .regex(degreePartRegex, 'Specialization can only contain A-Z, a-z, 0-9, spaces, ,, -, –, —, ()')
       .optional(),
     gpa: z
       .string()
@@ -625,7 +625,7 @@ const Education = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 100 characters. Only alphabets, numbers, spaces, and commas allowed.
+                        Maximum 100 characters. Allowed: A-Z, a-z, 0-9, spaces, ,
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -651,7 +651,7 @@ const Education = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum 50 characters. Format: "Education Centre State, Education Center Country" is appropriate for resumes. Only alphabets, numbers, spaces, and commas allowed.
+                        Maximum 50 characters. Format: "Education Centre State, Education Center Country" is appropriate for resumes. Allowed: A-Z, a-z, 0-9, spaces, ,
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -719,7 +719,7 @@ const Education = () => {
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Total degree length (including all parts) must not exceed 100 characters. Only alphabets, numbers, spaces, and commas allowed.
+                  Total degree length (including all parts) must not exceed 100 characters. Allowed: A-Z, a-z, 0-9, spaces, ,, -, –, —, ()
                 </p>
               </div>
 
@@ -843,7 +843,7 @@ const Education = () => {
                 <div className="bg-muted/50 p-3 rounded-md flex items-start gap-2">
                   <Info className="h-4 w-4 mt-0.5 shrink-0" />
                   <p className="text-sm text-muted-foreground">
-                    Each course can only contain alphabets, numbers, spaces, and commas. Maximum 30 characters per course.
+                    Each course can only contain A-Z, a-z, 0-9, spaces, ,. Maximum 30 characters per course.
                   </p>
                 </div>
 

@@ -96,3 +96,6 @@ def get_pdf_history_collection():
 def get_ai_usage_logs_collection():
     return get_database().ai_usage_logs
 
+def get_uploaded_resumes_collection():
+    return get_database().uploaded_resumes
+
