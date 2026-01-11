@@ -108,3 +108,6 @@ def get_ai_usage_logs_collection():
 def get_uploaded_resumes_collection():
     return get_database().uploaded_resumes
 
+def get_custom_resumes_collection():
+    return get_database().custom_resumes
+
