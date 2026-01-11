@@ -10,10 +10,24 @@ from app.models.ai import (
     ExtractResumeResponse,
     SaveExtractedResumeRequest,
     SaveExtractedResumeResponse,
-    ExtractedResumeData
+    ExtractedResumeData,
+    RephraseExperienceProjectRequest,
+    RephraseExperienceProjectResponse,
+    RephraseProjectSubpointsRequest,
+    RephraseProjectSubpointsResponse,
+    RephraseVolunteerDescriptionRequest,
+    RephraseVolunteerDescriptionResponse
 )
 from app.models.uploaded_resume import UploadedResumeResponse
-from app.services.openai_service import generate_subpoints, rephrase_title, rephrase_subpoints
+from app.services.openai_service import (
+    generate_subpoints,
+    rephrase_title,
+    rephrase_subpoints,
+    rephrase_experience_project_description,
+    rephrase_project_subpoints,
+    rephrase_volunteer_description,
+    log_ai_usage
+)
 from app.services.pdf_extraction_service import extract_text_from_pdf, extract_resume_data_with_openai, convert_first_page_to_image
 from app.services.cloudinary_service import upload_pdf_from_bytes, upload_image_from_bytes
 from app.services.resume_save_service import save_extracted_resume_data
@@ -186,6 +200,13 @@ async def extract_resume_endpoint(
             # Thumbnail is optional for UX, not critical for functionality
             print(f"Warning: Failed to generate thumbnail: {str(e)}")
         
+        # Log AI usage and update user tokens
+        try:
+            await log_ai_usage(user_id, "extract_resume", "resume", "temp", tokens_used)
+        except Exception as e:
+            # Log error but don't fail the request if logging fails
+            print(f"Warning: Failed to log AI usage: {str(e)}")
+        
         # Save extraction record to database
         try:
             uploaded_resumes_collection = get_uploaded_resumes_collection()
@@ -199,6 +220,7 @@ async def extract_resume_endpoint(
                 "thumbnail_url": thumbnail_url,
                 "thumbnail_public_id": thumbnail_public_id,
                 "extracted_data": extracted_data_dict,
+                "tokens_used": tokens_used,
                 "uploaded_at": datetime.utcnow(),
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
@@ -286,6 +308,7 @@ async def get_uploaded_resumes(
                     thumbnail_url=resume.get("thumbnail_url"),
                     thumbnail_public_id=resume.get("thumbnail_public_id"),
                     extracted_data=extracted_data,
+                    tokens_used=resume.get("tokens_used", 0),
                     uploaded_at=resume["uploaded_at"],
                     created_at=resume["created_at"],
                     updated_at=resume["updated_at"]
@@ -297,5 +320,75 @@ async def get_uploaded_resumes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch uploaded resumes: {str(e)}"
+        )
+
+@router.post("/rephrase-experience-project", response_model=RephraseExperienceProjectResponse)
+async def rephrase_experience_project_endpoint(
+    request: RephraseExperienceProjectRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Rephrase an experience project description to be resume-friendly"""
+    try:
+        rephrased_description, tokens_used = await rephrase_experience_project_description(
+            current_user["user_id"],
+            request.title,
+            request.current_description,
+            request.validation_rule
+        )
+        return RephraseExperienceProjectResponse(
+            rephrased_description=rephrased_description,
+            tokens_used=tokens_used
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rephrase experience project description: {str(e)}"
+        )
+
+@router.post("/rephrase-project-subpoints", response_model=RephraseProjectSubpointsResponse)
+async def rephrase_project_subpoints_endpoint(
+    request: RephraseProjectSubpointsRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Rephrase project subpoints to be resume-friendly"""
+    try:
+        rephrased_subpoints, tokens_used = await rephrase_project_subpoints(
+            current_user["user_id"],
+            request.title,
+            request.current_subpoints,
+            request.other_subpoints,
+            request.validation_rule
+        )
+        return RephraseProjectSubpointsResponse(
+            rephrased_subpoints=rephrased_subpoints,
+            tokens_used=tokens_used
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rephrase project subpoints: {str(e)}"
+        )
+
+@router.post("/rephrase-volunteer-description", response_model=RephraseVolunteerDescriptionResponse)
+async def rephrase_volunteer_description_endpoint(
+    request: RephraseVolunteerDescriptionRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Rephrase a volunteer description to be resume-friendly"""
+    try:
+        rephrased_description, tokens_used = await rephrase_volunteer_description(
+            current_user["user_id"],
+            request.title,
+            request.current_description,
+            request.validation_rule
+        )
+        return RephraseVolunteerDescriptionResponse(
+            rephrased_description=rephrased_description,
+            tokens_used=tokens_used
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rephrase volunteer description: {str(e)}"
         )
 

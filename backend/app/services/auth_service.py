@@ -29,7 +29,8 @@ async def register_user(user_data: UserRegister) -> dict:
         "analytics": {
             "ai_calls_count": 0,
             "pdfs_generated_count": 0,
-            "pdfs_downloaded_count": 0
+            "pdfs_downloaded_count": 0,
+            "tokens_used": 0
         },
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()

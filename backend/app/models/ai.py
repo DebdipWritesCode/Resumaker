@@ -92,6 +92,22 @@ class RephraseSubpointsRequest(BaseModel):
     item_id: str
     subpoints: List[str]
 
+class RephraseExperienceProjectRequest(BaseModel):
+    title: str
+    current_description: str
+    validation_rule: str  # e.g., "Maximum 150 characters" or "Keep it under 50 words"
+
+class RephraseProjectSubpointsRequest(BaseModel):
+    title: str
+    current_subpoints: List[str]
+    other_subpoints: List[str] = []  # Other subpoints for context
+    validation_rule: str  # e.g., "Maximum 100 characters per point"
+
+class RephraseVolunteerDescriptionRequest(BaseModel):
+    title: str  # Position or organization name
+    current_description: str
+    validation_rule: str  # e.g., "Maximum 200 characters"
+
 # Response Models
 class GenerateSubpointsResponse(BaseModel):
     subpoints: List[str]
@@ -103,6 +119,18 @@ class RephraseTitleResponse(BaseModel):
 
 class RephraseSubpointsResponse(BaseModel):
     rephrased_subpoints: List[str]
+    tokens_used: int
+
+class RephraseExperienceProjectResponse(BaseModel):
+    rephrased_description: str
+    tokens_used: int
+
+class RephraseProjectSubpointsResponse(BaseModel):
+    rephrased_subpoints: List[str]
+    tokens_used: int
+
+class RephraseVolunteerDescriptionResponse(BaseModel):
+    rephrased_description: str
     tokens_used: int
 
 class ExtractResumeResponse(BaseModel):

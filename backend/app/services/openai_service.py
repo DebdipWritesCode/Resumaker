@@ -136,6 +136,160 @@ Requirements:
     except Exception as e:
         raise Exception(f"Failed to rephrase subpoints: {str(e)}")
 
+async def rephrase_experience_project_description(
+    user_id: str,
+    title: str,
+    current_description: str,
+    validation_rule: str
+) -> tuple[str, int]:
+    """Rephrase an experience project description to be resume-friendly"""
+    prompt = f"""Rephrase this experience project description to be more professional and impactful for a resume:
+
+Project Title: {title}
+Current Description: {current_description}
+
+Validation Rule: {validation_rule}
+
+Requirements:
+- Start with a powerful action verb (e.g., Developed, Implemented, Designed, Optimized, Led)
+- Include quantifiable metrics or numbers (percentages, amounts, timeframes, user counts, etc.)
+- Be specific and impactful
+- Use resume-friendly language
+- End with a period
+- Follow the validation rule strictly
+- Make it concise but comprehensive
+- Focus on achievements and impact, not just responsibilities
+
+Return only the rephrased description, nothing else."""
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a professional resume writer specializing in creating impactful, metric-driven descriptions."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+        
+        rephrased_description = response.choices[0].message.content.strip()
+        tokens_used = response.usage.total_tokens
+        
+        # Log usage (no item_id for this operation)
+        await log_ai_usage(user_id, "rephrase_experience_project", "experience", "temp", tokens_used)
+        
+        return rephrased_description, tokens_used
+    except Exception as e:
+        raise Exception(f"Failed to rephrase experience project description: {str(e)}")
+
+async def rephrase_project_subpoints(
+    user_id: str,
+    title: str,
+    current_subpoints: list[str],
+    other_subpoints: list[str],
+    validation_rule: str
+) -> tuple[list[str], int]:
+    """Rephrase project subpoints to be resume-friendly"""
+    current_text = "\n".join([f"- {sp}" for sp in current_subpoints])
+    other_text = "\n".join([f"- {sp}" for sp in other_subpoints]) if other_subpoints else "None"
+    
+    prompt = f"""Rephrase these project subpoints to be more professional and impactful for a resume:
+
+Project Title: {title}
+
+Current Subpoints to Rephrase:
+{current_text}
+
+Other Subpoints (for context and consistency):
+{other_text}
+
+Validation Rule: {validation_rule}
+
+Requirements:
+- Start each point with a powerful action verb (e.g., Developed, Implemented, Designed, Optimized, Led, Built)
+- Include quantifiable metrics or numbers (percentages, amounts, timeframes, user counts, etc.)
+- Be specific and impactful
+- Use resume-friendly language
+- End each point with a period
+- Follow the validation rule strictly for each point
+- Maintain consistency with the other subpoints in style and tone
+- Format as a simple list, one point per line
+- Do not include bullet symbols or numbering
+- Maintain the same number of points as the current subpoints
+
+Return only the rephrased subpoints, one per line, nothing else."""
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a professional resume writer specializing in creating impactful, metric-driven bullet points."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=500,
+            temperature=0.7
+        )
+        
+        content = response.choices[0].message.content
+        rephrased = [line.strip() for line in content.split("\n") if line.strip() and not line.strip().startswith(("-", "*", "•", "1.", "2.", "3."))]
+        
+        tokens_used = response.usage.total_tokens
+        
+        # Log usage (no item_id for this operation)
+        await log_ai_usage(user_id, "rephrase_project_subpoints", "project", "temp", tokens_used)
+        
+        return rephrased, tokens_used
+    except Exception as e:
+        raise Exception(f"Failed to rephrase project subpoints: {str(e)}")
+
+async def rephrase_volunteer_description(
+    user_id: str,
+    title: str,
+    current_description: str,
+    validation_rule: str
+) -> tuple[str, int]:
+    """Rephrase a volunteer description to be resume-friendly"""
+    prompt = f"""Rephrase this volunteer experience description to be more professional and impactful for a resume:
+
+Position/Organization: {title}
+Current Description: {current_description}
+
+Validation Rule: {validation_rule}
+
+Requirements:
+- Start with a powerful action verb (e.g., Organized, Led, Coordinated, Managed, Facilitated)
+- Include quantifiable metrics or numbers (number of people, events, hours, impact metrics, etc.)
+- Be specific and impactful
+- Use resume-friendly language
+- End with a period
+- Follow the validation rule strictly
+- Make it concise but comprehensive
+- Focus on achievements and impact, not just responsibilities
+
+Return only the rephrased description, nothing else."""
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a professional resume writer specializing in creating impactful, metric-driven descriptions."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+        
+        rephrased_description = response.choices[0].message.content.strip()
+        tokens_used = response.usage.total_tokens
+        
+        # Log usage (no item_id for this operation)
+        await log_ai_usage(user_id, "rephrase_volunteer_description", "volunteer", "temp", tokens_used)
+        
+        return rephrased_description, tokens_used
+    except Exception as e:
+        raise Exception(f"Failed to rephrase volunteer description: {str(e)}")
+
 async def log_ai_usage(
     user_id: str,
     action_type: str,
@@ -145,14 +299,27 @@ async def log_ai_usage(
 ):
     """Log AI usage for analytics"""
     ai_usage_logs_collection = get_ai_usage_logs_collection()
-    await ai_usage_logs_collection.insert_one({
+    # Handle case where item_id might be "temp" or empty for operations without saved items
+    item_object_id = None
+    if item_id and item_id != "temp":
+        try:
+            item_object_id = ObjectId(item_id)
+        except Exception:
+            # If item_id is not a valid ObjectId, skip it
+            pass
+    
+    log_entry = {
         "user_id": ObjectId(user_id),
         "action_type": action_type,
         "section": section,
-        "item_id": ObjectId(item_id),
         "tokens_used": tokens_used,
         "created_at": datetime.utcnow()
-    })
+    }
+    
+    if item_object_id:
+        log_entry["item_id"] = item_object_id
+    
+    await ai_usage_logs_collection.insert_one(log_entry)
     
     # Update user analytics
     from app.database import get_users_collection
@@ -160,7 +327,10 @@ async def log_ai_usage(
     await users_collection.update_one(
         {"_id": ObjectId(user_id)},
         {
-            "$inc": {"analytics.ai_calls_count": 1},
+            "$inc": {
+                "analytics.ai_calls_count": 1,
+                "analytics.tokens_used": tokens_used
+            },
             "$set": {"analytics.last_ai_call_at": datetime.utcnow()}
         }
     )

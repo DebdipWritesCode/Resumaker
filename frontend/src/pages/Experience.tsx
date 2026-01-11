@@ -26,8 +26,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, X, Info, Briefcase, Edit2, Trash2, Calendar, FolderKanban } from 'lucide-react'
+import { Plus, X, Info, Briefcase, Edit2, Trash2, Calendar, FolderKanban, Sparkles } from 'lucide-react'
 import { toast } from 'react-toastify'
+import api from '@/api/axios'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // Validation helpers
 const companyRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
@@ -87,6 +89,7 @@ const Experience = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingExperienceId, setEditingExperienceId] = useState<number | null>(null)
+  const [rephrasingProjectIndex, setRephrasingProjectIndex] = useState<number | null>(null)
 
   useEffect(() => {
     dispatch(fetchExperience())
@@ -214,6 +217,37 @@ const Experience = () => {
   const removeProject = (index: number) => {
     const currentProjects = projects || []
     setValue('projects', currentProjects.filter((_, i) => i !== index), { shouldValidate: true })
+  }
+
+  const handleRephraseProjectDescription = async (projectIndex: number) => {
+    const project = projects[projectIndex]
+    if (!project || !project.title || !project.description) {
+      toast.error('Please fill in the project title and description first')
+      return
+    }
+
+    setRephrasingProjectIndex(projectIndex)
+    try {
+      const response = await api.post('/api/ai/rephrase-experience-project', {
+        title: project.title,
+        current_description: project.description,
+        validation_rule: 'Maximum 250 characters',
+      })
+
+      if (response.data?.rephrased_description) {
+        setValue(`projects.${projectIndex}.description`, response.data.rephrased_description, {
+          shouldValidate: true,
+        })
+        toast.success('Description rephrased successfully')
+      } else {
+        toast.error('No rephrased description received')
+      }
+    } catch (error: any) {
+      console.error('Error rephrasing project description:', error)
+      toast.error(error.response?.data?.detail || 'Failed to rephrase description')
+    } finally {
+      setRephrasingProjectIndex(null)
+    }
   }
 
   // Show error in toast if there's an error and no experiences data (only once)
@@ -598,7 +632,32 @@ const Experience = () => {
                       name={`projects.${index}.description`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="mb-3">Project Description</FormLabel>
+                          <div className="flex items-center justify-between mb-3">
+                            <FormLabel>Project Description</FormLabel>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleRephraseProjectDescription(index)}
+                                    disabled={rephrasingProjectIndex === index || !field.value || !projects[index]?.title}
+                                  >
+                                    {rephrasingProjectIndex === index ? (
+                                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                    ) : (
+                                      <Sparkles className="h-4 w-4 text-primary" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" align="end">
+                                  <p>Rephrase with AI</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                           <FormControl>
                             <Textarea
                               {...field}
@@ -606,6 +665,7 @@ const Experience = () => {
                               maxLength={250}
                               rows={3}
                               className="mt-2"
+                              disabled={rephrasingProjectIndex === index}
                             />
                           </FormControl>
                           <FormDescription>

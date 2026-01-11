@@ -29,6 +29,7 @@ class UserAnalytics(BaseModel):
     ai_calls_count: int
     pdfs_generated_count: int
     pdfs_downloaded_count: int
+    tokens_used: int  # Total tokens used across all AI operations (for admin tracking)
     last_ai_call_at: Optional[datetime] = None
     last_pdf_generated_at: Optional[datetime] = None
 

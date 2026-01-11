@@ -26,8 +26,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, X, Info, FolderKanban, Edit2, Trash2, Calendar, Code, Link as LinkIcon } from 'lucide-react'
+import { Plus, X, Info, FolderKanban, Edit2, Trash2, Calendar, Code, Link as LinkIcon, Sparkles } from 'lucide-react'
 import { toast } from 'react-toastify'
+import api from '@/api/axios'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // Validation helpers
 const nameRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
@@ -114,6 +116,7 @@ const Projects = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null)
   const [originalProject, setOriginalProject] = useState<ProjectResponse | null>(null)
+  const [rephrasingSubpointIndex, setRephrasingSubpointIndex] = useState<number | null>(null)
 
   useEffect(() => {
     dispatch(fetchProject())
@@ -264,6 +267,50 @@ const Projects = () => {
   const removeSubpoint = (index: number) => {
     const currentSubpoints = subpoints || []
     setValue('subpoints', currentSubpoints.filter((_, i) => i !== index), { shouldValidate: true })
+  }
+
+  const handleRephraseSubpoint = async (subpointIndex: number) => {
+    const subpoint = subpoints[subpointIndex]
+    const projectName = watch('name')
+    
+    if (!subpoint || !subpoint.text) {
+      toast.error('Please fill in the subpoint first')
+      return
+    }
+
+    if (!projectName) {
+      toast.error('Please fill in the project name first')
+      return
+    }
+
+    setRephrasingSubpointIndex(subpointIndex)
+    try {
+      // Get other subpoints (excluding the current one)
+      const otherSubpoints = subpoints
+        .filter((_, idx) => idx !== subpointIndex)
+        .map(sp => sp.text)
+
+      const response = await api.post('/api/ai/rephrase-project-subpoints', {
+        title: projectName,
+        current_subpoints: [subpoint.text],
+        other_subpoints: otherSubpoints,
+        validation_rule: 'Maximum 250 characters per point',
+      })
+
+      if (response.data?.rephrased_subpoints && response.data.rephrased_subpoints.length > 0) {
+        setValue(`subpoints.${subpointIndex}.text`, response.data.rephrased_subpoints[0], {
+          shouldValidate: true,
+        })
+        toast.success('Subpoint rephrased successfully')
+      } else {
+        toast.error('No rephrased subpoint received')
+      }
+    } catch (error: any) {
+      console.error('Error rephrasing subpoint:', error)
+      toast.error(error.response?.data?.detail || 'Failed to rephrase subpoint')
+    } finally {
+      setRephrasingSubpointIndex(null)
+    }
   }
 
   // Show error in toast if there's an error and no projects data (only once)
@@ -665,7 +712,32 @@ const Projects = () => {
                       name={`subpoints.${index}.text`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="mb-3">Subpoint</FormLabel>
+                          <div className="flex items-center justify-between mb-3">
+                            <FormLabel>Subpoint</FormLabel>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleRephraseSubpoint(index)}
+                                    disabled={rephrasingSubpointIndex === index || !field.value || !watch('name')}
+                                  >
+                                    {rephrasingSubpointIndex === index ? (
+                                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                    ) : (
+                                      <Sparkles className="h-4 w-4 text-primary" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" align="end">
+                                  <p>Rephrase with AI</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                           <FormControl>
                             <Textarea
                               {...field}
@@ -673,6 +745,7 @@ const Projects = () => {
                               maxLength={250}
                               rows={3}
                               className="mt-2"
+                              disabled={rephrasingSubpointIndex === index}
                             />
                           </FormControl>
                           <FormDescription>

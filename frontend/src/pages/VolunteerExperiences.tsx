@@ -26,8 +26,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Info, HeartHandshake, Edit2, Trash2, Calendar, Building2 } from 'lucide-react'
+import { Plus, Info, HeartHandshake, Edit2, Trash2, Calendar, Building2, Sparkles } from 'lucide-react'
 import { toast } from 'react-toastify'
+import api from '@/api/axios'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // Validation helpers
 const positionRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014&]+$/
@@ -77,6 +79,7 @@ const VolunteerExperiences = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingVolunteerId, setEditingVolunteerId] = useState<number | null>(null)
+  const [isRephrasingDescription, setIsRephrasingDescription] = useState(false)
 
   useEffect(() => {
     dispatch(fetchVolunteer())
@@ -141,6 +144,46 @@ const VolunteerExperiences = () => {
 
   const escapeSpecialSymbols = (text: string): string => {
     return text.replace(/%/g, '\\%').replace(/\./g, '\\.')
+  }
+
+  const { watch, setValue } = form
+
+  const handleRephraseDescription = async () => {
+    const position = watch('position')
+    const description = watch('description')
+
+    if (!description) {
+      toast.error('Please fill in the description first')
+      return
+    }
+
+    if (!position) {
+      toast.error('Please fill in the position first')
+      return
+    }
+
+    setIsRephrasingDescription(true)
+    try {
+      const response = await api.post('/api/ai/rephrase-volunteer-description', {
+        title: position,
+        current_description: description,
+        validation_rule: 'Maximum 250 characters',
+      })
+
+      if (response.data?.rephrased_description) {
+        setValue('description', response.data.rephrased_description, {
+          shouldValidate: true,
+        })
+        toast.success('Description rephrased successfully')
+      } else {
+        toast.error('No rephrased description received')
+      }
+    } catch (error: any) {
+      console.error('Error rephrasing description:', error)
+      toast.error(error.response?.data?.detail || 'Failed to rephrase description')
+    } finally {
+      setIsRephrasingDescription(false)
+    }
   }
 
   const onSubmit = async (data: VolunteerFormValues) => {
@@ -439,13 +482,40 @@ const VolunteerExperiences = () => {
 
               {/* Description Section */}
               <div className="space-y-4">
-                <h3 className="text-base sm:text-lg font-semibold">Description</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base sm:text-lg font-semibold">Description</h3>
+                </div>
                 <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="mb-3">Description</FormLabel>
+                      <div className="flex items-center justify-between mb-3">
+                        <FormLabel>Description</FormLabel>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={handleRephraseDescription}
+                                disabled={isRephrasingDescription || !field.value || !watch('position')}
+                              >
+                                {isRephrasingDescription ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                ) : (
+                                  <Sparkles className="h-4 w-4 text-primary" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" align="end">
+                              <p>Rephrase with AI</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -453,6 +523,7 @@ const VolunteerExperiences = () => {
                           maxLength={250}
                           rows={4}
                           className="mt-2"
+                          disabled={isRephrasingDescription}
                         />
                       </FormControl>
                       <FormDescription>
