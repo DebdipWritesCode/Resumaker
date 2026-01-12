@@ -48,6 +48,7 @@ async def register_user(user_data: UserRegister) -> dict:
         "last_name": user_data.last_name,
         "is_admin": False,
         "is_verified": False,
+        "is_revoked": False,
         "credits": INITIAL_CREDITS,
         "max_resume": INITIAL_MAX_RESUMES,
         "analytics": {
@@ -114,6 +115,13 @@ async def login_user(user_data: UserLogin, response: Response) -> dict:
             detail="Email not verified. Please verify your email to login."
         )
     
+    # Check if user is revoked
+    if user.get("is_revoked", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account access has been revoked. Please contact support."
+        )
+    
     # Create tokens
     access_token = create_access_token(data={"sub": str(user["_id"])})
     refresh_token = create_refresh_token(data={"sub": str(user["_id"])})
@@ -142,6 +150,7 @@ async def login_user(user_data: UserLogin, response: Response) -> dict:
     # Get credits and max_resume (with defaults for existing users)
     credits = user.get("credits", INITIAL_CREDITS)
     max_resume = user.get("max_resume", INITIAL_MAX_RESUMES)
+    is_admin = user.get("is_admin", False)
     
     return {
         "access_token": access_token,
@@ -149,6 +158,7 @@ async def login_user(user_data: UserLogin, response: Response) -> dict:
         "email": user["email"],
         "first_name": user["first_name"],
         "last_name": user["last_name"],
+        "is_admin": is_admin,
         "credits": credits,
         "max_resume": max_resume
     }
@@ -207,12 +217,20 @@ async def refresh_access_token(refresh_token: str, response: Response) -> dict:
             detail="Email not verified. Please verify your email to continue."
         )
     
+    # Check if user is revoked
+    if user.get("is_revoked", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account access has been revoked. Please contact support."
+        )
+    
     # Create new access token
     new_access_token = create_access_token(data={"sub": user_id})
     
     # Get credits and max_resume (with defaults for existing users)
     credits = user.get("credits", INITIAL_CREDITS)
     max_resume = user.get("max_resume", INITIAL_MAX_RESUMES)
+    is_admin = user.get("is_admin", False)
     
     return {
         "access_token": new_access_token,
@@ -220,6 +238,7 @@ async def refresh_access_token(refresh_token: str, response: Response) -> dict:
         "email": user["email"],
         "first_name": user["first_name"],
         "last_name": user["last_name"],
+        "is_admin": is_admin,
         "credits": credits,
         "max_resume": max_resume
     }

@@ -46,7 +46,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
             name: response.data.first_name + ' ' + response.data.last_name, 
             email: response.data.email,
             credits: response.data.credits,
-            max_resume: response.data.max_resume
+            max_resume: response.data.max_resume,
+            is_admin: response.data.is_admin
           }))
         } else {
           // No token in response, clear and mark as initialized

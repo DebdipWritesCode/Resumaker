@@ -25,6 +25,7 @@ class UserResponse(BaseModel):
     last_name: str
     is_admin: bool
     is_verified: bool = False
+    is_revoked: bool = False
     credits: int = 0
     max_resume: int = 2
     created_at: datetime
@@ -50,6 +51,7 @@ class TokenResponse(BaseModel):
     email: str
     first_name: str
     last_name: str
+    is_admin: bool = False
     credits: int = 0
     max_resume: int = 2
 

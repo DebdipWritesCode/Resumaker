@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime
 from app.models.user import UserWithAnalytics
@@ -47,4 +47,37 @@ class AdminPDFStatsResponse(BaseModel):
     stats: List[PDFStats]
     total_generated: int
     total_downloaded: int
+
+# Request Models
+class CreateAdminRequest(BaseModel):
+    email: EmailStr
+
+class UpdateCreditsRequest(BaseModel):
+    credits: int
+
+# Response Models for Admin Actions
+class RevokeUserResponse(BaseModel):
+    message: str
+    user_id: str
+    is_revoked: bool
+
+class UnrevokeUserResponse(BaseModel):
+    message: str
+    user_id: str
+    is_revoked: bool
+
+class DeleteUserResponse(BaseModel):
+    message: str
+    user_id: str
+
+class CreateAdminResponse(BaseModel):
+    message: str
+    user_id: str
+    email: str
+    is_admin: bool
+
+class UpdateCreditsResponse(BaseModel):
+    message: str
+    user_id: str
+    credits: int
 

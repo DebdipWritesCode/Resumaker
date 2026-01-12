@@ -7,6 +7,7 @@ interface AuthState {
   email: string | null
   credits: number | null
   max_resume: number | null
+  is_admin: boolean | null
 }
 
 const initialState: AuthState = {
@@ -16,6 +17,7 @@ const initialState: AuthState = {
   email: null,
   credits: null,
   max_resume: null,
+  is_admin: null,
 }
 
 const authSlice = createSlice({
@@ -40,6 +42,7 @@ const authSlice = createSlice({
       state.email = null
       state.credits = null
       state.max_resume = null
+      state.is_admin = null
       state.isInitialized = true
     },
     setUserData: (state, action) => {
@@ -50,6 +53,9 @@ const authSlice = createSlice({
       }
       if (action.payload.max_resume !== undefined) {
         state.max_resume = action.payload.max_resume
+      }
+      if (action.payload.is_admin !== undefined) {
+        state.is_admin = action.payload.is_admin
       }
     },
     setCredits: (state, action) => {
@@ -67,8 +73,11 @@ const authSlice = createSlice({
     updateUserEmail: (state, action) => {
       state.email = action.payload.email || null
     },
+    setIsAdmin: (state, action) => {
+      state.is_admin = action.payload
+    },
   },
 })
 
-export const { setAccessToken, clearAccessToken, setUserData, setInitialized, setCredits, setMaxResume, updateUserName, updateUserEmail } = authSlice.actions
+export const { setAccessToken, clearAccessToken, setUserData, setInitialized, setCredits, setMaxResume, updateUserName, updateUserEmail, setIsAdmin } = authSlice.actions
 export default authSlice.reducer

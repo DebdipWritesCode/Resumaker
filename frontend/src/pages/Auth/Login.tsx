@@ -54,10 +54,15 @@ const Login = () => {
         name: response.first_name + ' ' + response.last_name, 
         email: data.email,
         credits: response.credits,
-        max_resume: response.max_resume
+        max_resume: response.max_resume,
+        is_admin: response.is_admin
       }))
-      // Redirect to dashboard
-      navigate('/dashboard')
+      // Redirect based on admin status
+      if (response.is_admin) {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err: any) {
       setError(
         err.response?.data?.detail || err.response?.data?.message || 'Invalid email or password'

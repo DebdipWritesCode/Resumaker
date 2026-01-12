@@ -7,6 +7,7 @@ import { Route, Routes } from 'react-router-dom'
 
 import DashboardLayout from '@/layouts/DashboardLayout'
 import ProtectedRoute from './ProtectedRoute'
+import AdminProtectedRoute from './AdminProtectedRoute'
 import Landing from '@/pages/Landing'
 import Dashboard from '@/pages/Dashboard'
 import MyElements from '@/pages/MyElements'
@@ -25,6 +26,7 @@ import Certifications from '@/pages/Certifications'
 import Awards from '@/pages/Awards'
 import VolunteerExperiences from '@/pages/VolunteerExperiences'
 import PublicResume from '@/pages/PublicResume'
+import Admin from '@/pages/Admin'
 
 const Router = () => {
   return (
@@ -35,6 +37,15 @@ const Router = () => {
       <Route path="/verify" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/resume/:id" element={<PublicResume />} />
+
+      <Route
+        path="/admin"
+        element={
+          <AdminProtectedRoute>
+            <Admin />
+          </AdminProtectedRoute>
+        }
+      />
 
       <Route
         element={

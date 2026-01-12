@@ -50,7 +50,8 @@ api.interceptors.response.use(
           name: res.data.first_name + ' ' + res.data.last_name, 
           email: res.data.email,
           credits: res.data.credits,
-          max_resume: res.data.max_resume
+          max_resume: res.data.max_resume,
+          is_admin: res.data.is_admin
         }))
         const newAccessToken = res.data.access_token
 
