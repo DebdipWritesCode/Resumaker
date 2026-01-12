@@ -1,5 +1,5 @@
 import { Link2, MapPin, Calendar, ArrowDown, CheckCircle, Zap } from 'lucide-react'
-import { cn } from '../../lib/utils'
+import { cn } from '../lib/utils'
 
 interface ResumeTip {
   id: number

@@ -44,7 +44,7 @@ import {
 import { dashboardApi, type DashboardResponse, type ElementCounts } from '@/api/dashboard'
 import { customResumeApi } from '@/api/custom-resume'
 import { toast } from 'react-toastify'
-import { cn } from '../../lib/utils'
+import { cn } from '../lib/utils'
 
 const Dashboard = () => {
   const navigate = useNavigate()
