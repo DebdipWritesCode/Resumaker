@@ -49,8 +49,8 @@ async def lifespan(app: FastAPI):
     await close_mongo_connection()
 
 app = FastAPI(
-    title="Resume Customizer API",
-    description="Backend API for Resume Customizer application",
+    title="Resumaker API",
+    description="Backend API for Resumaker application",
     version="1.0.0",
     lifespan=lifespan
 )

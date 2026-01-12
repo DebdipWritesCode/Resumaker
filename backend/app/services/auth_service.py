@@ -5,7 +5,7 @@ from app.database import get_users_collection, get_refresh_tokens_collection
 from app.models.user import UserRegister, UserLogin
 from app.utils.password_handler import hash_password, verify_password
 from app.utils.jwt_handler import create_access_token, create_refresh_token, verify_refresh_token
-from app.settings.get_env import COOKIE_DOMAIN, REFRESH_TOKEN_EXPIRATION_HOURS
+from app.settings.get_env import REFRESH_TOKEN_EXPIRATION_HOURS
 from app.services.otp_service import create_otp
 from app.services.email_service import send_verification_email, send_password_reset_email, send_email_change_otp
 from app.services.password_reset_service import (
@@ -136,15 +136,15 @@ async def login_user(user_data: UserLogin, response: Response) -> dict:
         "created_at": datetime.utcnow()
     })
     
-    # Set refresh token in httpOnly cookie
+    # Set refresh token in httpOnly cookie (cross-site enabled)
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=COOKIE_DOMAIN != "localhost",
-        samesite="lax",
+        secure=True,  # Required for cross-site cookies
+        samesite="none",  # Allows cross-site cookies
         max_age=REFRESH_TOKEN_EXPIRATION_HOURS * 3600,
-        domain=COOKIE_DOMAIN if COOKIE_DOMAIN != "localhost" else None
+        domain=None  # No domain restriction for cross-site cookies
     )
     
     # Get credits and max_resume (with defaults for existing users)
@@ -248,10 +248,12 @@ async def logout_user(refresh_token: str, response: Response):
     refresh_tokens_collection = get_refresh_tokens_collection()
     await refresh_tokens_collection.delete_one({"token": refresh_token})
     
-    # Clear cookie
+    # Clear cookie (cross-site)
     response.delete_cookie(
         key="refresh_token",
-        domain=COOKIE_DOMAIN if COOKIE_DOMAIN != "localhost" else None
+        domain=None,  # No domain restriction for cross-site cookies
+        samesite="none",
+        secure=True
     )
     
     return {"message": "Logged out successfully"}

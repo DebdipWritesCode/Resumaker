@@ -41,7 +41,8 @@ CORS_ORIGINS: List[str] = [
     origin.strip() 
     for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
 ]
-COOKIE_DOMAIN: str = os.getenv("COOKIE_DOMAIN", "localhost")
+# Cookie settings - set to None for cross-site cookies
+COOKIE_DOMAIN: str | None = os.getenv("COOKIE_DOMAIN", None)
 
 # Validate required environment variables
 if ENVIRONMENT == "prod":
