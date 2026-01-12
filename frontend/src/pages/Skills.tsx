@@ -31,14 +31,14 @@ import { toast } from 'react-toastify'
 
 // Validation helpers
 const categoryRegex = /^[a-zA-Z0-9\s,]+$/
-const itemRegex = /^[a-zA-Z0-9\s\-]+$/
+const itemRegex = /^[a-zA-Z0-9\s\-+]+$/
 
 const itemSchema = z.object({
   name: z
     .string()
     .min(1, 'Item name is required')
     .max(20, 'Item name must be at most 20 characters')
-    .regex(itemRegex, 'Item name can only contain alphabets, numbers, spaces, and hyphens'),
+    .regex(itemRegex, 'Item name can only contain alphabets, numbers, spaces, hyphens, and plus signs'),
 })
 
 const skillSchema = z.object({
@@ -397,7 +397,7 @@ const Skills = () => {
                             />
                           </FormControl>
                           <FormDescription>
-                            Maximum 20 characters. Only alphabets, numbers, spaces, and hyphens allowed.
+                            Maximum 20 characters. Only alphabets, numbers, spaces, hyphens, and plus signs allowed.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
