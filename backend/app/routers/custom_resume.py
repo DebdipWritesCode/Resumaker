@@ -86,7 +86,7 @@ async def populate_references(
     resume_doc: dict,
     user_id: ObjectId
 ) -> dict:
-    """Populate all referenced objects for a custom resume"""
+    """Populate all referenced objects for a custom resume, maintaining the relative order of elements"""
     headings = []
     educations = []
     experiences = []
@@ -96,7 +96,7 @@ async def populate_references(
     certifications = []
     awards = []
     
-    # Populate headings
+    # Populate headings - maintain order
     if resume_doc.get("heading_ids"):
         headings_collection = get_headings_collection()
         cursor = headings_collection.find({
@@ -104,19 +104,23 @@ async def populate_references(
             "user_id": user_id
         })
         heading_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        heading_map = {heading["_id"]: heading for heading in heading_docs}
+        # Build list in the order of heading_ids
         headings = [
             HeadingResponse(
-                id=str(heading["_id"]),
-                user_id=str(heading["user_id"]),
-                mobile=heading.get("mobile"),
-                custom_links=heading.get("custom_links", []),
-                created_at=heading["created_at"],
-                updated_at=heading["updated_at"]
+                id=str(heading_map[heading_id]["_id"]),
+                user_id=str(heading_map[heading_id]["user_id"]),
+                mobile=heading_map[heading_id].get("mobile"),
+                custom_links=heading_map[heading_id].get("custom_links", []),
+                created_at=heading_map[heading_id]["created_at"],
+                updated_at=heading_map[heading_id]["updated_at"]
             )
-            for heading in heading_docs
+            for heading_id in resume_doc["heading_ids"]
+            if heading_id in heading_map
         ]
     
-    # Populate educations
+    # Populate educations - maintain order
     if resume_doc.get("education_ids"):
         educations_collection = get_educations_collection()
         cursor = educations_collection.find({
@@ -124,25 +128,29 @@ async def populate_references(
             "user_id": user_id
         })
         education_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        education_map = {education["_id"]: education for education in education_docs}
+        # Build list in the order of education_ids
         educations = [
             EducationResponse(
-                id=str(education["_id"]),
-                user_id=str(education["user_id"]),
-                institution=education["institution"],
-                location=education["location"],
-                degree=education["degree"],
-                gpa=education.get("gpa"),
-                max_gpa=education.get("max_gpa"),
-                start_date=education["start_date"],
-                end_date=education["end_date"],
-                courses=education.get("courses"),
-                created_at=education["created_at"],
-                updated_at=education["updated_at"]
+                id=str(education_map[education_id]["_id"]),
+                user_id=str(education_map[education_id]["user_id"]),
+                institution=education_map[education_id]["institution"],
+                location=education_map[education_id]["location"],
+                degree=education_map[education_id]["degree"],
+                gpa=education_map[education_id].get("gpa"),
+                max_gpa=education_map[education_id].get("max_gpa"),
+                start_date=education_map[education_id]["start_date"],
+                end_date=education_map[education_id]["end_date"],
+                courses=education_map[education_id].get("courses"),
+                created_at=education_map[education_id]["created_at"],
+                updated_at=education_map[education_id]["updated_at"]
             )
-            for education in education_docs
+            for education_id in resume_doc["education_ids"]
+            if education_id in education_map
         ]
     
-    # Populate experiences
+    # Populate experiences - maintain order
     if resume_doc.get("experience_ids"):
         experiences_collection = get_experiences_collection()
         cursor = experiences_collection.find({
@@ -150,23 +158,27 @@ async def populate_references(
             "user_id": user_id
         })
         experience_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        experience_map = {experience["_id"]: experience for experience in experience_docs}
+        # Build list in the order of experience_ids
         experiences = [
             ExperienceResponse(
-                id=str(experience["_id"]),
-                user_id=str(experience["user_id"]),
-                company=experience["company"],
-                location=experience["location"],
-                position=experience["position"],
-                start_date=experience["start_date"],
-                end_date=experience["end_date"],
-                projects=experience.get("projects", []),
-                created_at=experience["created_at"],
-                updated_at=experience["updated_at"]
+                id=str(experience_map[experience_id]["_id"]),
+                user_id=str(experience_map[experience_id]["user_id"]),
+                company=experience_map[experience_id]["company"],
+                location=experience_map[experience_id]["location"],
+                position=experience_map[experience_id]["position"],
+                start_date=experience_map[experience_id]["start_date"],
+                end_date=experience_map[experience_id]["end_date"],
+                projects=experience_map[experience_id].get("projects", []),
+                created_at=experience_map[experience_id]["created_at"],
+                updated_at=experience_map[experience_id]["updated_at"]
             )
-            for experience in experience_docs
+            for experience_id in resume_doc["experience_ids"]
+            if experience_id in experience_map
         ]
     
-    # Populate projects
+    # Populate projects - maintain order
     if resume_doc.get("project_ids"):
         projects_collection = get_projects_collection()
         cursor = projects_collection.find({
@@ -174,24 +186,28 @@ async def populate_references(
             "user_id": user_id
         })
         project_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        project_map = {project["_id"]: project for project in project_docs}
+        # Build list in the order of project_ids
         projects = [
             ProjectResponse(
-                id=str(project["_id"]),
-                user_id=str(project["user_id"]),
-                name=project["name"],
-                start_date=project["start_date"],
-                end_date=project["end_date"],
-                tech_stack=project["tech_stack"],
-                link=project.get("link"),
-                link_label=project.get("link_label"),
-                subpoints=project.get("subpoints", []),
-                created_at=project["created_at"],
-                updated_at=project["updated_at"]
+                id=str(project_map[project_id]["_id"]),
+                user_id=str(project_map[project_id]["user_id"]),
+                name=project_map[project_id]["name"],
+                start_date=project_map[project_id]["start_date"],
+                end_date=project_map[project_id]["end_date"],
+                tech_stack=project_map[project_id]["tech_stack"],
+                link=project_map[project_id].get("link"),
+                link_label=project_map[project_id].get("link_label"),
+                subpoints=project_map[project_id].get("subpoints", []),
+                created_at=project_map[project_id]["created_at"],
+                updated_at=project_map[project_id]["updated_at"]
             )
-            for project in project_docs
+            for project_id in resume_doc["project_ids"]
+            if project_id in project_map
         ]
     
-    # Populate skills
+    # Populate skills - maintain order
     if resume_doc.get("skill_ids"):
         skills_collection = get_skills_collection()
         cursor = skills_collection.find({
@@ -199,19 +215,24 @@ async def populate_references(
             "user_id": user_id
         })
         skill_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        skill_map = {skill["_id"]: skill for skill in skill_docs}
+        # Build list in the order of skill_ids
         skills = [
             SkillResponse(
-                id=str(skill["_id"]),
-                user_id=str(skill["user_id"]),
-                category=skill["category"],
-                items=skill["items"],
-                created_at=skill["created_at"],
-                updated_at=skill["updated_at"]
+                id=str(skill_map[skill_id]["_id"]),
+                user_id=str(skill_map[skill_id]["user_id"]),
+                category=skill_map[skill_id]["category"],
+                items=skill_map[skill_id]["items"],
+                notes=skill_map[skill_id].get("notes"),
+                created_at=skill_map[skill_id]["created_at"],
+                updated_at=skill_map[skill_id]["updated_at"]
             )
-            for skill in skill_docs
+            for skill_id in resume_doc["skill_ids"]
+            if skill_id in skill_map
         ]
     
-    # Populate volunteers
+    # Populate volunteers - maintain order
     if resume_doc.get("volunteer_ids"):
         volunteers_collection = get_volunteer_experiences_collection()
         cursor = volunteers_collection.find({
@@ -219,23 +240,27 @@ async def populate_references(
             "user_id": user_id
         })
         volunteer_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        volunteer_map = {volunteer["_id"]: volunteer for volunteer in volunteer_docs}
+        # Build list in the order of volunteer_ids
         volunteers = [
             VolunteerResponse(
-                id=str(volunteer["_id"]),
-                user_id=str(volunteer["user_id"]),
-                position=volunteer["position"],
-                organization=volunteer["organization"],
-                location=volunteer["location"],
-                description=volunteer["description"],
-                start_date=volunteer["start_date"],
-                end_date=volunteer["end_date"],
-                created_at=volunteer["created_at"],
-                updated_at=volunteer["updated_at"]
+                id=str(volunteer_map[volunteer_id]["_id"]),
+                user_id=str(volunteer_map[volunteer_id]["user_id"]),
+                position=volunteer_map[volunteer_id]["position"],
+                organization=volunteer_map[volunteer_id]["organization"],
+                location=volunteer_map[volunteer_id]["location"],
+                description=volunteer_map[volunteer_id]["description"],
+                start_date=volunteer_map[volunteer_id]["start_date"],
+                end_date=volunteer_map[volunteer_id]["end_date"],
+                created_at=volunteer_map[volunteer_id]["created_at"],
+                updated_at=volunteer_map[volunteer_id]["updated_at"]
             )
-            for volunteer in volunteer_docs
+            for volunteer_id in resume_doc["volunteer_ids"]
+            if volunteer_id in volunteer_map
         ]
     
-    # Populate certifications
+    # Populate certifications - maintain order
     if resume_doc.get("certification_ids"):
         certifications_collection = get_certifications_collection()
         cursor = certifications_collection.find({
@@ -243,23 +268,27 @@ async def populate_references(
             "user_id": user_id
         })
         certification_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        certification_map = {certification["_id"]: certification for certification in certification_docs}
+        # Build list in the order of certification_ids
         certifications = [
             CertificationResponse(
-                id=str(certification["_id"]),
-                user_id=str(certification["user_id"]),
-                title=certification["title"],
-                start_date=certification["start_date"],
-                end_date=certification["end_date"],
-                instructor=certification.get("instructor"),
-                platform=certification["platform"],
-                certification_link=certification.get("certification_link"),
-                created_at=certification["created_at"],
-                updated_at=certification["updated_at"]
+                id=str(certification_map[certification_id]["_id"]),
+                user_id=str(certification_map[certification_id]["user_id"]),
+                title=certification_map[certification_id]["title"],
+                start_date=certification_map[certification_id]["start_date"],
+                end_date=certification_map[certification_id]["end_date"],
+                instructor=certification_map[certification_id].get("instructor"),
+                platform=certification_map[certification_id]["platform"],
+                certification_link=certification_map[certification_id].get("certification_link"),
+                created_at=certification_map[certification_id]["created_at"],
+                updated_at=certification_map[certification_id]["updated_at"]
             )
-            for certification in certification_docs
+            for certification_id in resume_doc["certification_ids"]
+            if certification_id in certification_map
         ]
     
-    # Populate awards
+    # Populate awards - maintain order
     if resume_doc.get("award_ids"):
         awards_collection = get_awards_collection()
         cursor = awards_collection.find({
@@ -267,16 +296,20 @@ async def populate_references(
             "user_id": user_id
         })
         award_docs = await cursor.to_list(length=None)
+        # Create a mapping from _id to document for efficient lookup
+        award_map = {award["_id"]: award for award in award_docs}
+        # Build list in the order of award_ids
         awards = [
             AwardResponse(
-                id=str(award["_id"]),
-                user_id=str(award["user_id"]),
-                title=award["title"],
-                date=award["date"],
-                created_at=award["created_at"],
-                updated_at=award["updated_at"]
+                id=str(award_map[award_id]["_id"]),
+                user_id=str(award_map[award_id]["user_id"]),
+                title=award_map[award_id]["title"],
+                date=award_map[award_id]["date"],
+                created_at=award_map[award_id]["created_at"],
+                updated_at=award_map[award_id]["updated_at"]
             )
-            for award in award_docs
+            for award_id in resume_doc["award_ids"]
+            if award_id in award_map
         ]
     
     return {
@@ -1239,7 +1272,8 @@ async def fetch_all_user_elements(user_id: ObjectId) -> dict:
             id=str(skill["_id"]),
             user_id=str(skill["user_id"]),
             category=skill["category"],
-            items=skill["items"],
+            items=skill.get("items", []),
+            notes=skill.get("notes"),
             created_at=skill["created_at"],
             updated_at=skill["updated_at"]
         )

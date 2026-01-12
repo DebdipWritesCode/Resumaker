@@ -21,6 +21,7 @@ async def get_skills(current_user: dict = Depends(get_current_user)):
             user_id=str(skill["user_id"]),
             category=skill["category"],
             items=skill.get("items", []),
+            notes=skill.get("notes"),
             created_at=skill["created_at"],
             updated_at=skill["updated_at"]
         )
@@ -59,6 +60,7 @@ async def get_skill(
         user_id=str(skill["user_id"]),
         category=skill["category"],
         items=skill.get("items", []),
+        notes=skill.get("notes"),
         created_at=skill["created_at"],
         updated_at=skill["updated_at"]
     )
@@ -75,6 +77,7 @@ async def create_skill(
         "user_id": ObjectId(current_user["user_id"]),
         "category": skill_data.category,
         "items": skill_data.items or [],
+        "notes": skill_data.notes,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
@@ -87,6 +90,7 @@ async def create_skill(
         user_id=str(skill_doc["user_id"]),
         category=skill_doc["category"],
         items=skill_doc["items"],
+        notes=skill_doc.get("notes"),
         created_at=skill_doc["created_at"],
         updated_at=skill_doc["updated_at"]
     )
@@ -125,6 +129,8 @@ async def update_skill(
         update_data["category"] = skill_data.category
     if skill_data.items is not None:
         update_data["items"] = skill_data.items
+    if skill_data.set_notes or skill_data.notes is not None:
+        update_data["notes"] = skill_data.notes
     
     await skills_collection.update_one(
         {"_id": skill_object_id},
@@ -137,6 +143,7 @@ async def update_skill(
         user_id=str(updated["user_id"]),
         category=updated["category"],
         items=updated.get("items", []),
+        notes=updated.get("notes"),
         created_at=updated["created_at"],
         updated_at=updated["updated_at"]
     )

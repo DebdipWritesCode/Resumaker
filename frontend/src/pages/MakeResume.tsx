@@ -6,6 +6,9 @@ import { format } from 'date-fns'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import type { RootState } from '@/store'
+import { DndContext, closestCenter } from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import {
   Type,
   GraduationCap,
@@ -53,6 +56,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select'
+import { SortableSelectedItems } from '@/components/resume/SortableSelectedItems'
 import { customResumeApi, type CustomResume, type UserElementsResponse } from '@/api/custom-resume'
 import { toast } from 'react-toastify'
 import { cn } from '@/lib/utils'
@@ -414,7 +418,9 @@ const MakeResume = () => {
         const details = [techStack, subpointsCount > 0 ? `${subpointsCount} subpoint${subpointsCount !== 1 ? 's' : ''}` : '', hasLink].filter(Boolean).join(' • ')
         return `${element.start_date} - ${element.end_date}${details ? ` • ${details}` : ''}`
       case 'skills':
-        return `${element.items?.length || 0} skill${(element.items?.length || 0) !== 1 ? 's' : ''}: ${element.items?.slice(0, 3).join(', ') || 'None'}${element.items?.length > 3 ? '...' : ''}`
+        const itemsText = `${element.items?.length || 0} skill${(element.items?.length || 0) !== 1 ? 's' : ''}: ${element.items?.slice(0, 3).join(', ') || 'None'}${element.items?.length > 3 ? '...' : ''}`
+        const notesText = element.notes ? ` • Notes: ${element.notes}` : ''
+        return itemsText + notesText
       case 'volunteers':
         return `${element.location} • ${element.start_date} - ${element.end_date}`
       case 'certifications':
@@ -474,14 +480,20 @@ const MakeResume = () => {
           },
         }))
       case 'skills':
-        return userElements.skills.map((s) => ({
-          value: String(s.id),
-          label: formatElementLabel('skills', s),
-          description: formatElementDescription('skills', s),
-          details: {
-            items_count: s.items?.length || 0,
-          },
-        }))
+        return userElements.skills.map((s) => {
+          const details: Record<string, any> = {}
+          // Prioritize notes if they exist
+          if (s.notes) {
+            details.notes = s.notes
+          }
+          details.items_count = s.items?.length || 0
+          return {
+            value: String(s.id),
+            label: formatElementLabel('skills', s),
+            description: formatElementDescription('skills', s),
+            details,
+          }
+        })
       case 'volunteers':
         return userElements.volunteers.map((v) => ({
           value: String(v.id),
@@ -561,6 +573,24 @@ const MakeResume = () => {
       ...prev,
       [stateKey]: selected,
     }))
+  }
+
+  // Handle drag end for reordering selected items
+  const handleDragEnd = (event: DragEndEvent, type: string) => {
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const selectedIds = getSelectedIds(type)
+    const oldIndex = selectedIds.indexOf(String(active.id))
+    const newIndex = selectedIds.indexOf(String(over.id))
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newOrder = arrayMove(selectedIds, oldIndex, newIndex)
+      handleElementChange(type, newOrder)
+    }
   }
 
   // Get element count for resume card
@@ -933,6 +963,24 @@ const MakeResume = () => {
                           </p>
                         )}
                       </div>
+
+                      {/* Sortable Selected Items */}
+                      {getSelectedIds(activeTab).length > 0 && (
+                        <DndContext
+                          collisionDetection={closestCenter}
+                          onDragEnd={(event) => handleDragEnd(event, activeTab)}
+                        >
+                          <SortableContext
+                            items={getSelectedIds(activeTab)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <SortableSelectedItems
+                              selectedIds={getSelectedIds(activeTab)}
+                              options={getElementOptions(activeTab)}
+                            />
+                          </SortableContext>
+                        </DndContext>
+                      )}
 
                       {/* PDF Preview Section */}
                       {pdfPreviewUrl && (

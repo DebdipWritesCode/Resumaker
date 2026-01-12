@@ -5,6 +5,7 @@ export interface SkillResponse {
   user_id: number
   category: string
   items: string[]
+  notes: string | null
   created_at: string
   updated_at: string
 }
@@ -12,11 +13,14 @@ export interface SkillResponse {
 export interface SkillCreate {
   category: string
   items: string[]
+  notes?: string | null
 }
 
 export interface SkillUpdate {
   category?: string
   items?: string[]
+  notes?: string | null
+  set_notes?: boolean
 }
 
 export const skillApi = {

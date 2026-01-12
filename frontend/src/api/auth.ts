@@ -79,6 +79,56 @@ export interface ResetPasswordResponse {
   email: string
 }
 
+export interface UpdateNameData {
+  first_name: string
+  last_name: string
+}
+
+export interface UpdateNameResponse {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  is_admin: boolean
+  is_verified: boolean
+  credits: number
+  max_resume: number
+  created_at: string
+}
+
+export interface RequestEmailChangeResponse {
+  message: string
+  email: string
+}
+
+export interface VerifyEmailChangeOtpData {
+  otp: string
+}
+
+export interface VerifyEmailChangeOtpResponse {
+  message: string
+  email: string
+}
+
+export interface RequestNewEmailData {
+  new_email: string
+}
+
+export interface RequestNewEmailResponse {
+  message: string
+  email: string
+}
+
+export interface VerifyNewEmailOtpData {
+  new_email: string
+  otp: string
+}
+
+export interface VerifyNewEmailOtpResponse {
+  message: string
+  email: string
+}
+
 export const authApi = {
   signup: async (data: SignupData): Promise<SignupResponse> => {
     const response = await api.post<SignupResponse>('/api/auth/register', data)
@@ -112,6 +162,31 @@ export const authApi = {
 
   resetPassword: async (data: ResetPasswordData): Promise<ResetPasswordResponse> => {
     const response = await api.post<ResetPasswordResponse>('/api/auth/reset-password', data)
+    return response.data
+  },
+
+  updateName: async (data: UpdateNameData): Promise<UpdateNameResponse> => {
+    const response = await api.put<UpdateNameResponse>('/api/auth/update-name', data)
+    return response.data
+  },
+
+  requestEmailChange: async (): Promise<RequestEmailChangeResponse> => {
+    const response = await api.post<RequestEmailChangeResponse>('/api/auth/request-email-change')
+    return response.data
+  },
+
+  verifyEmailChangeOtp: async (data: VerifyEmailChangeOtpData): Promise<VerifyEmailChangeOtpResponse> => {
+    const response = await api.post<VerifyEmailChangeOtpResponse>('/api/auth/verify-email-change-otp', data)
+    return response.data
+  },
+
+  requestNewEmail: async (data: RequestNewEmailData): Promise<RequestNewEmailResponse> => {
+    const response = await api.post<RequestNewEmailResponse>('/api/auth/request-new-email', data)
+    return response.data
+  },
+
+  verifyNewEmailOtp: async (data: VerifyNewEmailOtpData): Promise<VerifyNewEmailOtpResponse> => {
+    const response = await api.post<VerifyNewEmailOtpResponse>('/api/auth/verify-new-email-otp', data)
     return response.data
   },
 }

@@ -6,10 +6,13 @@ from datetime import datetime
 class SkillCreate(BaseModel):
     category: str  # "Languages", "Frameworks", "Tools", "Soft Skills"
     items: List[str]
+    notes: Optional[str] = None
 
 class SkillUpdate(BaseModel):
     category: Optional[str] = None
     items: Optional[List[str]] = None
+    notes: Optional[str] = None
+    set_notes: Optional[bool] = None
 
 # Response Models
 class SkillResponse(BaseModel):
@@ -17,6 +20,7 @@ class SkillResponse(BaseModel):
     user_id: str
     category: str
     items: List[str]
+    notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     

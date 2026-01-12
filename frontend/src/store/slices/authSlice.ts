@@ -61,8 +61,14 @@ const authSlice = createSlice({
     setInitialized: (state) => {
       state.isInitialized = true
     },
+    updateUserName: (state, action) => {
+      state.name = action.payload.name || null
+    },
+    updateUserEmail: (state, action) => {
+      state.email = action.payload.email || null
+    },
   },
 })
 
-export const { setAccessToken, clearAccessToken, setUserData, setInitialized, setCredits, setMaxResume } = authSlice.actions
+export const { setAccessToken, clearAccessToken, setUserData, setInitialized, setCredits, setMaxResume, updateUserName, updateUserEmail } = authSlice.actions
 export default authSlice.reducer

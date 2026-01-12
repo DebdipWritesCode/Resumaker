@@ -25,6 +25,7 @@ import {
   FormDescription,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Plus, X, Code, Edit2, Trash2 } from 'lucide-react'
 import { toast } from 'react-toastify'
 
@@ -49,6 +50,7 @@ const skillSchema = z.object({
   items: z
     .array(itemSchema)
     .min(1, 'At least one item is required'),
+  notes: z.string().nullable().optional(),
 })
 
 type SkillFormValues = z.infer<typeof skillSchema>
@@ -69,6 +71,7 @@ const Skills = () => {
     defaultValues: {
       category: '',
       items: [],
+      notes: '',
     },
   })
 
@@ -77,6 +80,7 @@ const Skills = () => {
     form.reset({
       category: '',
       items: [],
+      notes: '',
     })
     setIsDialogOpen(true)
   }
@@ -87,6 +91,7 @@ const Skills = () => {
       form.reset({
         category: skillItem.category,
         items: skillItem.items.map((item) => ({ name: item })),
+        notes: skillItem.notes || '',
       })
       setIsDialogOpen(true)
     } catch (error) {
@@ -117,21 +122,60 @@ const Skills = () => {
     try {
       const itemsArray = data.items.map((item) => item.name)
 
-      const payload = {
-        category: data.category,
-        items: itemsArray,
-      }
-
       if (editingSkillId !== null) {
+        // Update operation - handle notes with set_notes flag
+        const updatePayload: {
+          category: string
+          items: string[]
+          notes?: string | null
+          set_notes?: boolean
+        } = {
+          category: data.category,
+          items: itemsArray,
+        }
+
+        // Handle notes update logic
+        const notesValue = data.notes?.trim() || ''
+        if (notesValue === '') {
+          // If notes is empty, check if we need to clear it
+          // We need to check the original skill's notes to determine if we're clearing
+          const originalSkill = skills.find((s) => s.id === editingSkillId)
+          if (originalSkill?.notes) {
+            // Original had notes, now empty - clear it
+            updatePayload.notes = null
+            updatePayload.set_notes = true
+          }
+          // If original had no notes and we're not providing any, omit both fields
+        } else {
+          // Notes has a value - update it
+          updatePayload.notes = notesValue
+        }
+
         await dispatch(
           updateSkill({
             skillId: editingSkillId,
-            data: payload,
+            data: updatePayload,
           })
         ).unwrap()
         toast.success('Skill category updated successfully')
       } else {
-        await dispatch(createSkill(payload)).unwrap()
+        // Create operation - include notes if provided
+        const createPayload: {
+          category: string
+          items: string[]
+          notes?: string | null
+        } = {
+          category: data.category,
+          items: itemsArray,
+        }
+
+        // Only include notes if it has a value
+        const notesValue = data.notes?.trim() || ''
+        if (notesValue !== '') {
+          createPayload.notes = notesValue
+        }
+
+        await dispatch(createSkill(createPayload)).unwrap()
         toast.success('Skill category created successfully')
       }
 
@@ -209,6 +253,11 @@ const Skills = () => {
                       <p className="text-sm text-muted-foreground">
                         {skillItem.items.join(', ')}
                       </p>
+                      {skillItem.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 italic">
+                          Notes: {skillItem.notes}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -268,7 +317,11 @@ const Skills = () => {
           setIsDialogOpen(open)
           if (!open) {
             setEditingSkillId(null)
-            form.reset()
+            form.reset({
+              category: '',
+              items: [],
+              notes: '',
+            })
           }
         }}
       >
@@ -369,6 +422,32 @@ const Skills = () => {
                 )}
               </div>
 
+              {/* Notes Section */}
+              <div className="space-y-4">
+                <h3 className="text-base sm:text-lg font-semibold">Personal Notes</h3>
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="mb-3">Notes (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          value={field.value || ''}
+                          placeholder="Add personal notes for reference (not shown in generated resumes)"
+                          className="mt-2 min-h-[100px]"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Personal notes for your reference. These will not appear in generated resumes.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <DialogFooter className="flex-col sm:flex-row gap-2">
                 <Button
                   type="button"
@@ -376,7 +455,11 @@ const Skills = () => {
                   onClick={() => {
                     setIsDialogOpen(false)
                     setEditingSkillId(null)
-                    form.reset()
+                    form.reset({
+                      category: '',
+                      items: [],
+                      notes: '',
+                    })
                   }}
                   className="w-full sm:w-auto"
                 >
