@@ -42,7 +42,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, option }) => {
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing mt-0.5 text-muted-foreground hover:text-foreground transition-colors touch-none p-1 -ml-1 -mt-1"
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors touch-none p-1 -ml-1 -mt-1"
           style={{ touchAction: 'none' }}
         >
           <GripVertical className="h-5 w-5 sm:h-6 sm:w-6" />
