@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Menu, ChevronLeft, LayoutDashboard, LogOut, FolderOpen, FileText, History, User, Lightbulb } from 'lucide-react'
+import { Menu, ChevronLeft, LayoutDashboard, LogOut, FolderOpen, FileText, History, User, Lightbulb, CreditCard } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -22,6 +22,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate()
   const userName = useSelector((state: RootState) => state.auth.name)
   const userEmail = useSelector((state: RootState) => state.auth.email)
+  const credits = useSelector((state: RootState) => state.auth.credits)
 
   const getInitials = (name: string | null) => {
     if (!name) return 'US'
@@ -42,6 +43,7 @@ const DashboardLayout = () => {
       <Sidebar
         userName={userName}
         userEmail={userEmail}
+        credits={credits}
         getInitials={getInitials}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
@@ -70,6 +72,7 @@ const DashboardLayout = () => {
 const Sidebar = ({
   userName,
   userEmail,
+  credits,
   getInitials,
   isOpen,
   setIsOpen,
@@ -78,6 +81,7 @@ const Sidebar = ({
 }: {
   userName: string | null
   userEmail: string | null
+  credits: number | null
   getInitials: (name: string | null) => string
   isOpen: boolean
   setIsOpen: (open: boolean) => void
@@ -101,6 +105,7 @@ const Sidebar = ({
           <SidebarContent
             userName={userName}
             userEmail={userEmail}
+            credits={credits}
             getInitials={getInitials}
             onNavigate={() => setIsOpen(false)}
             isCollapsed={false}
@@ -117,6 +122,7 @@ const Sidebar = ({
         <SidebarContent
           userName={userName}
           userEmail={userEmail}
+          credits={credits}
           getInitials={getInitials}
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
@@ -129,6 +135,7 @@ const Sidebar = ({
 const SidebarContent = ({
   userName,
   userEmail,
+  credits,
   getInitials,
   onNavigate,
   isCollapsed,
@@ -136,6 +143,7 @@ const SidebarContent = ({
 }: {
   userName: string | null
   userEmail: string | null
+  credits: number | null
   getInitials: (name: string | null) => string
   onNavigate?: () => void
   isCollapsed: boolean
@@ -243,6 +251,20 @@ const SidebarContent = ({
               variant="ghost"
               className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start'}`}
               onClick={onNavigate}
+              title={isCollapsed ? 'Payments' : undefined}
+            >
+              <Link to="/payments" className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span>Payments</span>}
+              </Link>
+            </Button>
+          </li>
+          <li>
+            <Button
+              asChild
+              variant="ghost"
+              className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start'}`}
+              onClick={onNavigate}
               title={isCollapsed ? 'My Profile' : undefined}
             >
               <Link to="/my-profile" className="flex items-center gap-3">
@@ -275,9 +297,15 @@ const SidebarContent = ({
       >
         <div
           className={`flex items-center gap-3 w-full ${
-            isCollapsed ? 'justify-center' : ''
+            isCollapsed ? 'flex-col justify-center' : ''
           }`}
         >
+          {isCollapsed && credits !== null && (
+            <div className="text-center mb-2">
+              <p className="text-xs font-semibold text-primary">{credits}</p>
+              <p className="text-[10px] text-muted-foreground">Credits</p>
+            </div>
+          )}
           <Avatar className="shrink-0">
             <AvatarImage src="" />
             <AvatarFallback>{getInitials(userName)}</AvatarFallback>
@@ -288,6 +316,11 @@ const SidebarContent = ({
               <p className="text-sm text-muted-foreground truncate">
                 {userEmail || 'No email'}
               </p>
+              {credits !== null && (
+                <p className="text-sm font-semibold text-primary mt-1">
+                  Credits: {credits}
+                </p>
+              )}
             </div>
           )}
         </div>

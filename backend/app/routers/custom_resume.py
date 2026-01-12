@@ -409,8 +409,29 @@ async def create_custom_resume(
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new custom resume"""
+    from app.services.credit_service import get_user_max_resume
+    from app.utils.constants import INITIAL_MAX_RESUMES
+    
     custom_resumes_collection = get_custom_resumes_collection()
     user_id = ObjectId(current_user["user_id"])
+    user_id_str = current_user["user_id"]
+    
+    # Check max_resume limit
+    try:
+        max_resume = await get_user_max_resume(user_id_str)
+    except HTTPException:
+        # If user not found, use default
+        max_resume = INITIAL_MAX_RESUMES
+    
+    # Count existing resumes for this user
+    resume_count = await custom_resumes_collection.count_documents({"user_id": user_id})
+    
+    # Check if user has reached the limit
+    if resume_count >= max_resume:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maximum resume limit reached. You have {resume_count} resumes out of {max_resume} allowed. Purchase additional slots to create more resumes."
+        )
     
     # Validate all referenced IDs
     heading_ids = await validate_referenced_ids(
@@ -874,7 +895,22 @@ async def select_resume_elements(
     current_user: dict = Depends(get_current_user)
 ):
     """Use AI to select relevant resume elements based on job description"""
-    user_id = ObjectId(current_user["user_id"])
+    from app.services.credit_service import deduct_credits
+    from app.utils.constants import CREDIT_COSTS
+    
+    user_id_str = current_user["user_id"]
+    user_id = ObjectId(user_id_str)
+    
+    # Deduct credits before processing
+    try:
+        await deduct_credits(user_id_str, CREDIT_COSTS.SELECT_RESUME_ELEMENTS)
+    except HTTPException:
+        raise  # Re-raise HTTPException (insufficient credits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process credits: {str(e)}"
+        )
     
     try:
         # Fetch all user's projects, awards, certifications, and volunteers
@@ -904,7 +940,7 @@ async def select_resume_elements(
         # Call AI service to select elements
         try:
             selected_ids, tokens_used = await select_resume_elements_for_job(
-                str(user_id),
+                user_id_str,
                 request.job_description,
                 projects,
                 awards,

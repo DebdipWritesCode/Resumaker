@@ -111,3 +111,6 @@ def get_uploaded_resumes_collection():
 def get_custom_resumes_collection():
     return get_database().custom_resumes
 
+def get_payments_collection():
+    return get_database().payments
+

@@ -30,6 +30,8 @@ import { Plus, X, Info, Briefcase, Edit2, Trash2, Calendar, FolderKanban, Sparkl
 import { toast } from 'react-toastify'
 import api from '@/api/axios'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { REPHRASE_COST } from '@/utils/paymentConstants'
+import { checkCredits, getCreditErrorMessage, handleCreditError, updateCreditsAfterOperation } from '@/utils/creditUtils'
 
 // Validation helpers
 const companyRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
@@ -86,6 +88,7 @@ type ExperienceFormValues = z.infer<typeof experienceSchema>
 const Experience = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { experiences, loading, error } = useSelector((state: RootState) => state.experience)
+  const credits = useSelector((state: RootState) => state.auth.credits)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingExperienceId, setEditingExperienceId] = useState<number | null>(null)
@@ -226,6 +229,12 @@ const Experience = () => {
       return
     }
 
+    // Check credits before proceeding
+    if (!checkCredits(REPHRASE_COST, credits)) {
+      toast.error(getCreditErrorMessage(REPHRASE_COST, credits))
+      return
+    }
+
     setRephrasingProjectIndex(projectIndex)
     try {
       const response = await api.post('/api/ai/rephrase-experience-project', {
@@ -233,6 +242,9 @@ const Experience = () => {
         current_description: project.description,
         validation_rule: 'Maximum 250 characters',
       })
+
+      // Update credits after successful rephrase
+      updateCreditsAfterOperation(response, dispatch, credits, REPHRASE_COST)
 
       if (response.data?.rephrased_description) {
         setValue(`projects.${projectIndex}.description`, response.data.rephrased_description, {
@@ -244,7 +256,14 @@ const Experience = () => {
       }
     } catch (error: any) {
       console.error('Error rephrasing project description:', error)
-      toast.error(error.response?.data?.detail || 'Failed to rephrase description')
+      // Handle credit errors specifically
+      if (error.response?.status === 400 && 
+          (error.response?.data?.detail?.toLowerCase().includes('insufficient credits') ||
+           error.response?.data?.detail?.toLowerCase().includes('credit'))) {
+        handleCreditError(error, dispatch)
+      } else {
+        toast.error(error.response?.data?.detail || 'Failed to rephrase description')
+      }
     } finally {
       setRephrasingProjectIndex(null)
     }
@@ -643,7 +662,7 @@ const Experience = () => {
                                     size="icon"
                                     className="h-8 w-8"
                                     onClick={() => handleRephraseProjectDescription(index)}
-                                    disabled={rephrasingProjectIndex === index || !field.value || !projects[index]?.title}
+                                    disabled={rephrasingProjectIndex === index || !field.value || !projects[index]?.title || !checkCredits(REPHRASE_COST, credits)}
                                   >
                                     {rephrasingProjectIndex === index ? (
                                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -653,7 +672,7 @@ const Experience = () => {
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" align="end">
-                                  <p>Rephrase with AI</p>
+                                  <p>Rephrase with AI ({REPHRASE_COST} credits)</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>

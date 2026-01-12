@@ -30,6 +30,8 @@ import { Plus, X, Info, FolderKanban, Edit2, Trash2, Calendar, Code, Link as Lin
 import { toast } from 'react-toastify'
 import api from '@/api/axios'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { REPHRASE_COST } from '@/utils/paymentConstants'
+import { checkCredits, getCreditErrorMessage, handleCreditError, updateCreditsAfterOperation } from '@/utils/creditUtils'
 
 // Validation helpers
 const nameRegex = /^[a-zA-Z0-9\s,\-\u2013\u2014]+$/
@@ -112,6 +114,7 @@ type ProjectFormValues = z.infer<typeof projectSchema>
 const Projects = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { projects, loading, error } = useSelector((state: RootState) => state.project)
+  const credits = useSelector((state: RootState) => state.auth.credits)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null)
@@ -283,6 +286,12 @@ const Projects = () => {
       return
     }
 
+    // Check credits before proceeding
+    if (!checkCredits(REPHRASE_COST, credits)) {
+      toast.error(getCreditErrorMessage(REPHRASE_COST, credits))
+      return
+    }
+
     setRephrasingSubpointIndex(subpointIndex)
     try {
       // Get other subpoints (excluding the current one)
@@ -297,6 +306,9 @@ const Projects = () => {
         validation_rule: 'Maximum 250 characters per point',
       })
 
+      // Update credits after successful rephrase
+      updateCreditsAfterOperation(response, dispatch, credits, REPHRASE_COST)
+
       if (response.data?.rephrased_subpoints && response.data.rephrased_subpoints.length > 0) {
         setValue(`subpoints.${subpointIndex}.text`, response.data.rephrased_subpoints[0], {
           shouldValidate: true,
@@ -307,7 +319,14 @@ const Projects = () => {
       }
     } catch (error: any) {
       console.error('Error rephrasing subpoint:', error)
-      toast.error(error.response?.data?.detail || 'Failed to rephrase subpoint')
+      // Handle credit errors specifically
+      if (error.response?.status === 400 && 
+          (error.response?.data?.detail?.toLowerCase().includes('insufficient credits') ||
+           error.response?.data?.detail?.toLowerCase().includes('credit'))) {
+        handleCreditError(error, dispatch)
+      } else {
+        toast.error(error.response?.data?.detail || 'Failed to rephrase subpoint')
+      }
     } finally {
       setRephrasingSubpointIndex(null)
     }
@@ -723,7 +742,7 @@ const Projects = () => {
                                     size="icon"
                                     className="h-8 w-8"
                                     onClick={() => handleRephraseSubpoint(index)}
-                                    disabled={rephrasingSubpointIndex === index || !field.value || !watch('name')}
+                                    disabled={rephrasingSubpointIndex === index || !field.value || !watch('name') || !checkCredits(REPHRASE_COST, credits)}
                                   >
                                     {rephrasingSubpointIndex === index ? (
                                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -733,7 +752,7 @@ const Projects = () => {
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" align="end">
-                                  <p>Rephrase with AI</p>
+                                  <p>Rephrase with AI ({REPHRASE_COST} credits)</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>

@@ -3,6 +3,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format } from 'date-fns'
+import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import type { RootState } from '@/store'
 import {
   Type,
   GraduationCap,
@@ -53,6 +56,10 @@ import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-selec
 import { customResumeApi, type CustomResume, type UserElementsResponse } from '@/api/custom-resume'
 import { toast } from 'react-toastify'
 import { cn } from '@/lib/utils'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '@/store'
+import { SELECT_ELEMENTS_COST } from '@/utils/paymentConstants'
+import { checkCredits, getCreditErrorMessage, handleCreditError, updateCreditsAfterOperation } from '@/utils/creditUtils'
 
 const resumeSchema = z.object({
   name: z.string().min(1, 'Resume name is required'),
@@ -83,6 +90,10 @@ const tabs = [
 ]
 
 const MakeResume = () => {
+  const navigate = useNavigate()
+  const dispatch = useDispatch<AppDispatch>()
+  const maxResume = useSelector((state: RootState) => state.auth.max_resume)
+  const credits = useSelector((state: RootState) => state.auth.credits)
   const [resumes, setResumes] = useState<CustomResume[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -170,8 +181,20 @@ const MakeResume = () => {
     fetchResumes()
   }, [])
 
+  // Check if user can create more resumes
+  const canCreateMore = maxResume === null || resumes.length < maxResume
+
   // Open dialog for new resume
   const handleCreate = async () => {
+    // Check if user has reached the limit
+    if (!canCreateMore) {
+      toast.error(
+        `You have reached your resume limit (${maxResume} resumes). Buy a new slot to create more resumes.`
+      )
+      navigate('/payments')
+      return
+    }
+
     setEditingResume(null)
     form.reset({ name: '' })
     setSelectedElements({
@@ -273,11 +296,20 @@ const MakeResume = () => {
       return
     }
 
+    // Check credits before proceeding
+    if (!checkCredits(SELECT_ELEMENTS_COST, credits)) {
+      toast.error(getCreditErrorMessage(SELECT_ELEMENTS_COST, credits))
+      return
+    }
+
     try {
       setIsSelectingWithAi(true)
       const response = await customResumeApi.selectElements({
         job_description: jobDescription.trim(),
       })
+
+      // Update credits after successful selection
+      updateCreditsAfterOperation(response, dispatch, credits, SELECT_ELEMENTS_COST)
 
       // Update selected elements by replacing (not merging) the four categories
       setSelectedElements((prev) => ({
@@ -304,10 +336,17 @@ const MakeResume = () => {
       setJobDescription('')
     } catch (error: any) {
       console.error('Error selecting elements with AI:', error)
-      const errorMessage =
-        error.response?.data?.detail ||
-        'Failed to select elements with AI. Please try again.'
-      toast.error(errorMessage)
+      // Handle credit errors specifically
+      if (error.response?.status === 400 && 
+          (error.response?.data?.detail?.toLowerCase().includes('insufficient credits') ||
+           error.response?.data?.detail?.toLowerCase().includes('credit'))) {
+        handleCreditError(error, dispatch, navigate)
+      } else {
+        const errorMessage =
+          error.response?.data?.detail ||
+          'Failed to select elements with AI. Please try again.'
+        toast.error(errorMessage)
+      }
     } finally {
       setIsSelectingWithAi(false)
     }
@@ -555,8 +594,26 @@ const MakeResume = () => {
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
             Create and manage your custom resumes by selecting from your resume elements
           </p>
+          {!canCreateMore && maxResume !== null && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                You have reached your resume limit ({maxResume} resumes).{' '}
+                <button
+                  onClick={() => navigate('/payments')}
+                  className="underline font-semibold hover:text-yellow-900 dark:hover:text-yellow-100"
+                >
+                  Buy a new slot
+                </button>{' '}
+                to create more resumes.
+              </p>
+            </div>
+          )}
         </div>
-        <Button onClick={handleCreate} className="w-full sm:w-auto">
+        <Button
+          onClick={handleCreate}
+          className="w-full sm:w-auto"
+          disabled={!canCreateMore}
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Resume
         </Button>
@@ -780,9 +837,12 @@ const MakeResume = () => {
               variant="outline"
               onClick={() => setIsAiDialogOpen(true)}
               className="flex items-center gap-2"
+              disabled={!checkCredits(SELECT_ELEMENTS_COST, credits)}
+              title={!checkCredits(SELECT_ELEMENTS_COST, credits) ? getCreditErrorMessage(SELECT_ELEMENTS_COST, credits) : ''}
             >
               <Sparkles className="h-4 w-4" />
               <span>Select with AI</span>
+              <span className="text-xs text-muted-foreground ml-1">({SELECT_ELEMENTS_COST} credits)</span>
             </Button>
           </div>
 
@@ -959,7 +1019,7 @@ const MakeResume = () => {
               Select Elements with AI
             </DialogTitle>
             <DialogDescription>
-              Enter a job description and AI will automatically select the most relevant projects, awards, certifications, and volunteer experiences for your resume.
+              Enter a job description and AI will automatically select the most relevant projects, awards, certifications, and volunteer experiences for your resume. This operation costs {SELECT_ELEMENTS_COST} credits.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -994,7 +1054,8 @@ const MakeResume = () => {
             <Button
               type="button"
               onClick={handleAiSelection}
-              disabled={isSelectingWithAi || !jobDescription.trim()}
+              disabled={isSelectingWithAi || !jobDescription.trim() || !checkCredits(SELECT_ELEMENTS_COST, credits)}
+              title={!checkCredits(SELECT_ELEMENTS_COST, credits) ? getCreditErrorMessage(SELECT_ELEMENTS_COST, credits) : ''}
             >
               {isSelectingWithAi ? (
                 <>
@@ -1004,7 +1065,7 @@ const MakeResume = () => {
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Select Elements
+                  Select Elements ({SELECT_ELEMENTS_COST} credits)
                 </>
               )}
             </Button>

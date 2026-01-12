@@ -27,6 +27,8 @@ export interface LoginResponse {
   last_name: string
   email: string
   is_admin: boolean
+  credits: number
+  max_resume: number
 }
 
 export interface VerifyOtpData {

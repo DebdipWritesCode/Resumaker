@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 from fastapi import HTTPException, status
 from app.database import get_otps_collection
+from app.utils.password_handler import hash_otp, verify_otp as verify_otp_hash
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +33,13 @@ async def create_otp(user_id: ObjectId) -> str:
     otp_code = generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRATION_MINUTES)
     
+    # Hash OTP before storing
+    hashed_otp = hash_otp(otp_code)
+    
     # Create OTP document
     otp_doc = {
         "user_id": user_id,
-        "otp": otp_code,
+        "otp": hashed_otp,
         "created_at": datetime.utcnow(),
         "expires_at": expires_at
     }
@@ -58,28 +62,31 @@ async def verify_otp(user_id: ObjectId, otp: str) -> bool:
     """
     otps_collection = get_otps_collection()
     
-    # Find OTP document
-    otp_doc = await otps_collection.find_one({
-        "user_id": user_id,
-        "otp": otp
-    })
+    # Find all OTP documents for this user (can't query by hash)
+    cursor = otps_collection.find({"user_id": user_id})
+    otp_docs = await cursor.to_list(length=None)
     
-    if not otp_doc:
+    if not otp_docs:
         logger.warning(f"OTP not found for user {user_id}")
         return False
     
-    # Check if OTP is expired
-    if otp_doc["expires_at"] < datetime.utcnow():
-        # Delete expired OTP
-        await otps_collection.delete_one({"_id": otp_doc["_id"]})
-        logger.warning(f"Expired OTP attempted for user {user_id}")
-        return False
+    # Iterate through OTP documents and verify against each hash
+    for otp_doc in otp_docs:
+        # Check if OTP is expired first
+        if otp_doc["expires_at"] < datetime.utcnow():
+            # Delete expired OTP
+            await otps_collection.delete_one({"_id": otp_doc["_id"]})
+            continue
+        
+        # Verify the provided OTP against the stored hash
+        if verify_otp_hash(otp, otp_doc["otp"]):
+            # Delete OTP after successful verification
+            await otps_collection.delete_one({"_id": otp_doc["_id"]})
+            logger.info(f"OTP verified successfully for user {user_id}")
+            return True
     
-    # Delete OTP after successful verification
-    await otps_collection.delete_one({"_id": otp_doc["_id"]})
-    logger.info(f"OTP verified successfully for user {user_id}")
-    
-    return True
+    logger.warning(f"Invalid OTP attempted for user {user_id}")
+    return False
 
 async def delete_user_otps(user_id: ObjectId) -> None:
     """

@@ -16,6 +16,7 @@ from app.services.password_reset_service import (
     check_eligibility,
     delete_eligibility
 )
+from app.utils.constants import INITIAL_CREDITS, INITIAL_MAX_RESUMES
 
 async def register_user(user_data: UserRegister) -> dict:
     """Register a new user"""
@@ -37,6 +38,8 @@ async def register_user(user_data: UserRegister) -> dict:
         "last_name": user_data.last_name,
         "is_admin": False,
         "is_verified": False,
+        "credits": INITIAL_CREDITS,
+        "max_resume": INITIAL_MAX_RESUMES,
         "analytics": {
             "ai_calls_count": 0,
             "pdfs_generated_count": 0,
@@ -126,12 +129,18 @@ async def login_user(user_data: UserLogin, response: Response) -> dict:
         domain=COOKIE_DOMAIN if COOKIE_DOMAIN != "localhost" else None
     )
     
+    # Get credits and max_resume (with defaults for existing users)
+    credits = user.get("credits", INITIAL_CREDITS)
+    max_resume = user.get("max_resume", INITIAL_MAX_RESUMES)
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "email": user["email"],
         "first_name": user["first_name"],
-        "last_name": user["last_name"]
+        "last_name": user["last_name"],
+        "credits": credits,
+        "max_resume": max_resume
     }
 
 async def refresh_access_token(refresh_token: str, response: Response) -> dict:
@@ -191,12 +200,18 @@ async def refresh_access_token(refresh_token: str, response: Response) -> dict:
     # Create new access token
     new_access_token = create_access_token(data={"sub": user_id})
     
+    # Get credits and max_resume (with defaults for existing users)
+    credits = user.get("credits", INITIAL_CREDITS)
+    max_resume = user.get("max_resume", INITIAL_MAX_RESUMES)
+    
     return {
         "access_token": new_access_token,
         "token_type": "bearer",
         "email": user["email"],
         "first_name": user["first_name"],
-        "last_name": user["last_name"]
+        "last_name": user["last_name"],
+        "credits": credits,
+        "max_resume": max_resume
     }
 
 async def logout_user(refresh_token: str, response: Response):

@@ -31,6 +31,10 @@ OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 SMTP_EMAIL: str = os.getenv("SMTP_EMAIL", "")
 SMTP_APP_PASSWORD: str = os.getenv("SMTP_APP_PASSWORD", "")
 
+# Razorpay
+RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "")
+
 # Application
 ENVIRONMENT: str = os.getenv("ENVIRONMENT", "dev")
 CORS_ORIGINS: List[str] = [
@@ -51,6 +55,8 @@ if ENVIRONMENT == "prod":
         ("OPENAI_API_KEY", OPENAI_API_KEY),
         ("SMTP_EMAIL", SMTP_EMAIL),
         ("SMTP_APP_PASSWORD", SMTP_APP_PASSWORD),
+        ("RAZORPAY_KEY_ID", RAZORPAY_KEY_ID),
+        ("RAZORPAY_KEY_SECRET", RAZORPAY_KEY_SECRET),
     ]
     
     missing_vars = [var_name for var_name, var_value in required_vars if not var_value]

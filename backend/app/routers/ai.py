@@ -71,11 +71,27 @@ async def rephrase_title_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     """Rephrase a title for better impact"""
+    from app.services.credit_service import deduct_credits
+    from app.utils.constants import CREDIT_COSTS
+    
+    user_id = current_user["user_id"]
+    
+    # Deduct credits before processing
+    try:
+        await deduct_credits(user_id, CREDIT_COSTS.REPHRASE)
+    except HTTPException:
+        raise  # Re-raise HTTPException (insufficient credits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process credits: {str(e)}"
+        )
+    
     try:
         rephrased_title, tokens_used = await rephrase_title(
             request.section,
             request.item_id,
-            current_user["user_id"],
+            user_id,
             request.current_title
         )
         return RephraseTitleResponse(
@@ -94,11 +110,27 @@ async def rephrase_subpoints_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     """Rephrase subpoints for clarity and professionalism"""
+    from app.services.credit_service import deduct_credits
+    from app.utils.constants import CREDIT_COSTS
+    
+    user_id = current_user["user_id"]
+    
+    # Deduct credits before processing
+    try:
+        await deduct_credits(user_id, CREDIT_COSTS.REPHRASE)
+    except HTTPException:
+        raise  # Re-raise HTTPException (insufficient credits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process credits: {str(e)}"
+        )
+    
     try:
         rephrased_subpoints, tokens_used = await rephrase_subpoints(
             request.section,
             request.item_id,
-            current_user["user_id"],
+            user_id,
             request.subpoints
         )
         return RephraseSubpointsResponse(
@@ -117,6 +149,22 @@ async def extract_resume_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     """Extract structured resume data from uploaded PDF"""
+    from app.services.credit_service import deduct_credits
+    from app.utils.constants import CREDIT_COSTS
+    
+    user_id = current_user["user_id"]
+    
+    # Deduct credits before processing
+    try:
+        await deduct_credits(user_id, CREDIT_COSTS.EXTRACT_RESUME)
+    except HTTPException:
+        raise  # Re-raise HTTPException (insufficient credits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process credits: {str(e)}"
+        )
+    
     # Validate file is PDF
     if not file.filename or not file.filename.lower().endswith('.pdf'):
         raise HTTPException(
@@ -169,7 +217,6 @@ async def extract_resume_endpoint(
             )
         
         # Only proceed with Cloudinary and DB if OpenAI extraction succeeded
-        user_id = current_user["user_id"]
         filename = f"{uuid.uuid4()}.pdf"
         
         # Upload PDF to Cloudinary
@@ -328,9 +375,25 @@ async def rephrase_experience_project_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     """Rephrase an experience project description to be resume-friendly"""
+    from app.services.credit_service import deduct_credits
+    from app.utils.constants import CREDIT_COSTS
+    
+    user_id = current_user["user_id"]
+    
+    # Deduct credits before processing
+    try:
+        await deduct_credits(user_id, CREDIT_COSTS.REPHRASE)
+    except HTTPException:
+        raise  # Re-raise HTTPException (insufficient credits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process credits: {str(e)}"
+        )
+    
     try:
         rephrased_description, tokens_used = await rephrase_experience_project_description(
-            current_user["user_id"],
+            user_id,
             request.title,
             request.current_description,
             request.validation_rule
@@ -351,9 +414,25 @@ async def rephrase_project_subpoints_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     """Rephrase project subpoints to be resume-friendly"""
+    from app.services.credit_service import deduct_credits
+    from app.utils.constants import CREDIT_COSTS
+    
+    user_id = current_user["user_id"]
+    
+    # Deduct credits before processing
+    try:
+        await deduct_credits(user_id, CREDIT_COSTS.REPHRASE)
+    except HTTPException:
+        raise  # Re-raise HTTPException (insufficient credits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process credits: {str(e)}"
+        )
+    
     try:
         rephrased_subpoints, tokens_used = await rephrase_project_subpoints(
-            current_user["user_id"],
+            user_id,
             request.title,
             request.current_subpoints,
             request.other_subpoints,
@@ -375,9 +454,25 @@ async def rephrase_volunteer_description_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     """Rephrase a volunteer description to be resume-friendly"""
+    from app.services.credit_service import deduct_credits
+    from app.utils.constants import CREDIT_COSTS
+    
+    user_id = current_user["user_id"]
+    
+    # Deduct credits before processing
+    try:
+        await deduct_credits(user_id, CREDIT_COSTS.REPHRASE)
+    except HTTPException:
+        raise  # Re-raise HTTPException (insufficient credits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process credits: {str(e)}"
+        )
+    
     try:
         rephrased_description, tokens_used = await rephrase_volunteer_description(
-            current_user["user_id"],
+            user_id,
             request.title,
             request.current_description,
             request.validation_rule

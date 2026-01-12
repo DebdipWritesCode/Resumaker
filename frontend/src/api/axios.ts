@@ -46,7 +46,12 @@ api.interceptors.response.use(
 
         // Store the new access token
         store.dispatch(setAccessToken(res.data.access_token))
-        store.dispatch(setUserData({ name: res.data.first_name + ' ' + res.data.last_name, email: res.data.email }))
+        store.dispatch(setUserData({ 
+          name: res.data.first_name + ' ' + res.data.last_name, 
+          email: res.data.email,
+          credits: res.data.credits,
+          max_resume: res.data.max_resume
+        }))
         const newAccessToken = res.data.access_token
 
         // Update the original request with the new token

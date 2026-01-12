@@ -50,7 +50,12 @@ const Login = () => {
       const response = await authApi.login(data)
       // Store access token in Redux
       dispatch(setAccessToken(response.access_token))
-      dispatch(setUserData({ name: response.first_name + ' ' + response.last_name, email: data.email }))
+      dispatch(setUserData({ 
+        name: response.first_name + ' ' + response.last_name, 
+        email: data.email,
+        credits: response.credits,
+        max_resume: response.max_resume
+      }))
       // Redirect to dashboard
       navigate('/dashboard')
     } catch (err: any) {

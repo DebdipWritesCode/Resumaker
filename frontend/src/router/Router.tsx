@@ -14,6 +14,7 @@ import MakeResume from '@/pages/MakeResume'
 import History from '@/pages/History'
 import MyProfile from '@/pages/MyProfile'
 import ResumeTips from '@/pages/ResumeTips'
+import Payments from '@/pages/Payments'
 import Heading from '@/pages/Heading'
 import Education from '@/pages/Education'
 import Experience from '@/pages/Experience'
@@ -55,6 +56,7 @@ const Router = () => {
         <Route path="/history" element={<History />} />
         <Route path="/my-profile" element={<MyProfile />} />
         <Route path="/resume-tips" element={<ResumeTips />} />
+        <Route path="/payments" element={<Payments />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

@@ -8,7 +8,7 @@ from app.database import (
     get_password_reset_otps_collection, get_password_reset_eligibility_collection
 )
 from app.settings.get_env import CORS_ORIGINS, ENVIRONMENT, REFRESH_TOKEN_EXPIRATION_HOURS
-from app.routers import auth, ai, admin, compile as compile_router, heading, education, experience, project, skill, certification, award, volunteer, custom_resume
+from app.routers import auth, ai, admin, compile as compile_router, heading, education, experience, project, skill, certification, award, volunteer, custom_resume, payment
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,7 @@ app.include_router(certification.router)
 app.include_router(award.router)
 app.include_router(volunteer.router)
 app.include_router(custom_resume.router)
+app.include_router(payment.router)
 
 @app.get("/")
 async def root():

@@ -25,9 +25,15 @@ import { toast } from 'react-toastify'
 import api from '@/api/axios'
 import { ExtractedResumeReviewDialog } from '@/components/resume-extraction/ExtractedResumeReviewDialog'
 import type { ExtractedResumeData } from '@/components/resume-extraction/types'
+import { useSelector, useDispatch } from 'react-redux'
+import type { RootState, AppDispatch } from '@/store'
+import { EXTRACT_RESUME_COST } from '@/utils/paymentConstants'
+import { checkCredits, getCreditErrorMessage, handleCreditError, updateCreditsAfterOperation } from '@/utils/creditUtils'
 
 const MyElements = () => {
   const navigate = useNavigate()
+  const dispatch = useDispatch<AppDispatch>()
+  const credits = useSelector((state: RootState) => state.auth.credits)
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -174,6 +180,12 @@ const MyElements = () => {
       return
     }
 
+    // Check credits before proceeding
+    if (!checkCredits(EXTRACT_RESUME_COST, credits)) {
+      toast.error(getCreditErrorMessage(EXTRACT_RESUME_COST, credits))
+      return
+    }
+
     setIsUploading(true)
     try {
       const formData = new FormData()
@@ -186,6 +198,9 @@ const MyElements = () => {
       })
 
       console.log('Response:', response.data)
+      
+      // Update credits after successful extraction
+      updateCreditsAfterOperation(response, dispatch, credits, EXTRACT_RESUME_COST)
       
       // Store extracted data and PDF URL
       if (response.data?.extracted_data) {
@@ -205,8 +220,15 @@ const MyElements = () => {
       }
     } catch (error: any) {
       console.error('Error:', error)
-      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Failed to upload resume'
-      toast.error(errorMessage)
+      // Handle credit errors specifically
+      if (error.response?.status === 400 && 
+          (error.response?.data?.detail?.toLowerCase().includes('insufficient credits') ||
+           error.response?.data?.detail?.toLowerCase().includes('credit'))) {
+        handleCreditError(error, dispatch, navigate)
+      } else {
+        const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Failed to upload resume'
+        toast.error(errorMessage)
+      }
     } finally {
       setIsUploading(false)
     }
@@ -256,8 +278,10 @@ const MyElements = () => {
             variant="default"
             className="w-full sm:w-auto shrink-0"
             onClick={handleOpenUploadDialog}
+            disabled={!checkCredits(EXTRACT_RESUME_COST, credits)}
+            title={!checkCredits(EXTRACT_RESUME_COST, credits) ? getCreditErrorMessage(EXTRACT_RESUME_COST, credits) : ''}
           >
-            Add From Resume
+            Add From Resume ({EXTRACT_RESUME_COST} credits)
           </Button>
         </div>
       </div>
