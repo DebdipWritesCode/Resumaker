@@ -13,7 +13,7 @@ import {
 import api from '@/api/axios'
 import { toast } from 'react-toastify'
 import type { UploadedResumeResponse } from '@/types/history'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 // Helper function to convert UTC date string to local timezone
 const formatLocalDateTime = (utcDateString: string): string => {

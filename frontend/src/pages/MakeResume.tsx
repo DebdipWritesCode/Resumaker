@@ -59,7 +59,7 @@ import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-selec
 import { SortableSelectedItems } from '@/components/resume/SortableSelectedItems'
 import { customResumeApi, type CustomResume, type UserElementsResponse } from '@/api/custom-resume'
 import { toast } from 'react-toastify'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 import { useDispatch } from 'react-redux'
 import type { AppDispatch } from '@/store'
 import { SELECT_ELEMENTS_COST } from '@/utils/paymentConstants'
