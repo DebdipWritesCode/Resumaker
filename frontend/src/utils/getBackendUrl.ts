@@ -10,12 +10,19 @@ export const getBackendUrl = (): string => {
   
   // If the app is running over HTTPS, ensure the backend URL also uses HTTPS
   // This prevents mixed content errors in production
+  let finalUrl = backendUrl
   if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
     // Convert http:// to https://
     if (backendUrl.startsWith('http://')) {
-      return backendUrl.replace('http://', 'https://')
+      finalUrl = backendUrl.replace('http://', 'https://')
+      console.warn('⚠️ Backend URL converted from HTTP to HTTPS:', backendUrl, '→', finalUrl)
     }
   }
   
-  return backendUrl
+  // Debug log in development to verify the URL
+  if (import.meta.env.DEV) {
+    console.log('🔗 Backend URL:', finalUrl)
+  }
+  
+  return finalUrl
 }
