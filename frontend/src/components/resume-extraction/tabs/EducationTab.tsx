@@ -210,8 +210,8 @@ export const EducationTab = ({ data, onUpdate }: EducationTabProps) => {
                       <p className="text-xs text-muted-foreground mt-1">
                         Optional. Must be non-negative and not exceed Maximum GPA. Maximum 2 decimal places.
                       </p>
-                      {validateField('GPA', edu.gpa, 'gpa', edu.max_gpa) && (
-                        <p className="text-xs text-destructive mt-1">{validateField('GPA', edu.gpa, 'gpa', edu.max_gpa)}</p>
+                      {validateField('GPA', edu.gpa, 'gpa', edu.max_gpa ? parseFloat(edu.max_gpa) : null) && (
+                        <p className="text-xs text-destructive mt-1">{validateField('GPA', edu.gpa, 'gpa', edu.max_gpa ? parseFloat(edu.max_gpa) : null)}</p>
                       )}
                     </div>
                     <div>

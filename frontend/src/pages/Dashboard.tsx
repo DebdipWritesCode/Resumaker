@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import {
   Coins,
   FileText,
@@ -50,7 +48,6 @@ import { cn } from '@/lib/utils'
 
 const Dashboard = () => {
   const navigate = useNavigate()
-  const credits = useSelector((state: RootState) => state.auth.credits)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null)
@@ -115,18 +112,6 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error downloading PDF:', error)
       toast.error('Failed to download PDF')
-    }
-  }
-
-  const formatLocalDateTime = (utcDateString: string): string => {
-    try {
-      const date = new Date(utcDateString)
-      if (isNaN(date.getTime())) {
-        return 'Invalid date'
-      }
-      return format(date, "PPP 'at' p")
-    } catch (error) {
-      return 'Invalid date'
     }
   }
 
