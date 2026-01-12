@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Menu, ChevronLeft, LayoutDashboard, LogOut, FolderOpen, FileText, History, User, Lightbulb, CreditCard } from 'lucide-react'
+import { Menu, ChevronLeft, LayoutDashboard, LogOut, FolderOpen, FileText, History, User, Lightbulb, CreditCard, Coffee } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -284,6 +284,20 @@ const SidebarContent = ({
               <Link to="/resume-tips" className="flex items-center gap-3">
                 <Lightbulb className="h-5 w-5 shrink-0" />
                 {!isCollapsed && <span>Resume Tips</span>}
+              </Link>
+            </Button>
+          </li>
+          <li>
+            <Button
+              asChild
+              variant="ghost"
+              className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start'}`}
+              onClick={onNavigate}
+              title={isCollapsed ? 'Buy a Coffee' : undefined}
+            >
+              <Link to="/buy-coffee" className="flex items-center gap-3">
+                <Coffee className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span>Buy a Coffee</span>}
               </Link>
             </Button>
           </li>

@@ -15,6 +15,7 @@ import History from '@/pages/History'
 import MyProfile from '@/pages/MyProfile'
 import ResumeTips from '@/pages/ResumeTips'
 import Payments from '@/pages/Payments'
+import BuyCoffee from '@/pages/BuyCoffee'
 import Heading from '@/pages/Heading'
 import Education from '@/pages/Education'
 import Experience from '@/pages/Experience'
@@ -56,6 +57,7 @@ const Router = () => {
         <Route path="/history" element={<History />} />
         <Route path="/my-profile" element={<MyProfile />} />
         <Route path="/resume-tips" element={<ResumeTips />} />
+        <Route path="/buy-coffee" element={<BuyCoffee />} />
         <Route path="/payments" element={<Payments />} />
       </Route>
 

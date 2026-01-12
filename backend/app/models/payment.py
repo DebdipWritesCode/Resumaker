@@ -15,6 +15,18 @@ class VerifyPaymentRequest(BaseModel):
     signature: str
     plan_name: str
 
+class BuyCoffeeRequest(BaseModel):
+    amount: int
+
+class BuyCoffeeOrderRequest(BaseModel):
+    amount: int
+
+class BuyCoffeeVerifyRequest(BaseModel):
+    payment_id: str
+    order_id: str
+    signature: str
+    amount: int
+
 # Response Models
 class PaymentResponse(BaseModel):
     order_id: str
@@ -23,6 +35,13 @@ class PaymentResponse(BaseModel):
     key_id: str
     plan_name: str
     credits: int
+
+class BuyCoffeeResponse(BaseModel):
+    order_id: str
+    amount: int
+    currency: str = "INR"
+    key_id: str
+    plan_name: str
 
 class BuyResumeSlotResponse(BaseModel):
     message: str
