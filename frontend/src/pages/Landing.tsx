@@ -392,7 +392,7 @@ const Landing = () => {
       {/* Footer */}
       <footer className="bg-slate-900 dark:bg-slate-950 text-slate-300 py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <FileText className="h-5 w-5 text-blue-400" />
@@ -461,6 +461,51 @@ const Landing = () => {
                     className="text-slate-400 hover:text-white transition-colors"
                   >
                     Support Us
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/contact-us')}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Contact Us
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-white mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <button
+                    onClick={() => navigate('/privacy-policy')}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Privacy Policy
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/terms-and-conditions')}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Terms & Conditions
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/cancellations-refunds')}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Cancellations & Refunds
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/shipping-policy')}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Shipping Policy
                   </button>
                 </li>
               </ul>

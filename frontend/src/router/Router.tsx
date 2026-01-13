@@ -27,6 +27,11 @@ import Awards from '@/pages/Awards'
 import VolunteerExperiences from '@/pages/VolunteerExperiences'
 import PublicResume from '@/pages/PublicResume'
 import Admin from '@/pages/Admin'
+import PrivacyPolicy from '@/pages/PrivacyPolicy'
+import TermsAndConditions from '@/pages/TermsAndConditions'
+import CancellationsRefunds from '@/pages/CancellationsRefunds'
+import ShippingPolicy from '@/pages/ShippingPolicy'
+import ContactUs from '@/pages/ContactUs'
 
 const Router = () => {
   return (
@@ -37,6 +42,11 @@ const Router = () => {
       <Route path="/verify" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/resume/:id" element={<PublicResume />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+      <Route path="/cancellations-refunds" element={<CancellationsRefunds />} />
+      <Route path="/shipping-policy" element={<ShippingPolicy />} />
+      <Route path="/contact-us" element={<ContactUs />} />
 
       <Route
         path="/admin"
