@@ -5,6 +5,9 @@ from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from app.settings.get_env import SMTP_EMAIL, SMTP_APP_PASSWORD
 
+import socket
+socket.setdefaulttimeout(20)
+
 logger = logging.getLogger(__name__)
 
 SMTP_SERVER = "smtp.gmail.com"
@@ -72,8 +75,10 @@ def send_verification_email(user_email: str, user_name: str, otp: str) -> None:
         msg.attach(html_part)
         
         # Send email
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
+            server.ehlo()            # REQUIRED on Railway
             server.starttls()
+            server.ehlo()            # REQUIRED after STARTTLS
             server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
             server.send_message(msg)
         
@@ -118,8 +123,10 @@ def send_password_reset_email(user_email: str, user_name: str, otp: str) -> None
         msg.attach(html_part)
         
         # Send email
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
+            server.ehlo()            # REQUIRED on Railway
             server.starttls()
+            server.ehlo()            # REQUIRED after STARTTLS
             server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
             server.send_message(msg)
         
@@ -164,8 +171,10 @@ def send_email_change_otp(user_email: str, user_name: str, otp: str) -> None:
         msg.attach(html_part)
         
         # Send email
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
+            server.ehlo()            # REQUIRED on Railway
             server.starttls()
+            server.ehlo()            # REQUIRED after STARTTLS
             server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
             server.send_message(msg)
         
