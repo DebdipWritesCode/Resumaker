@@ -1,21 +1,13 @@
 import logging
 from pathlib import Path
-from resend import Resend
+import resend
 from app.settings.get_env import RESEND_API_KEY, RESEND_FROM_EMAIL
 
 logger = logging.getLogger(__name__)
 
-# Resend client will be initialized when needed
-_resend_client = None
-
-def get_resend_client():
-    """Get or create Resend client instance"""
-    global _resend_client
-    if _resend_client is None:
-        if not RESEND_API_KEY:
-            raise ValueError("RESEND_API_KEY must be configured")
-        _resend_client = Resend(api_key=RESEND_API_KEY)
-    return _resend_client
+# Initialize Resend API key
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
 def load_email_template() -> str:
     """Load the HTML email template"""
@@ -56,6 +48,10 @@ def send_verification_email(user_email: str, user_name: str, otp: str) -> None:
         user_name: User's first name
         otp: 6-digit OTP code
     """
+    if not RESEND_API_KEY:
+        logger.error("Resend API key not configured")
+        raise ValueError("RESEND_API_KEY must be configured")
+    
     # Use default from email if not configured (onboarding@resend.dev works for testing)
     from_email = RESEND_FROM_EMAIL if RESEND_FROM_EMAIL else "onboarding@resend.dev"
     
@@ -68,13 +64,13 @@ def send_verification_email(user_email: str, user_name: str, otp: str) -> None:
         html_content = html_content.replace("{{otp}}", otp)
         
         # Send email using Resend
-        resend = get_resend_client()
-        resend.emails.send({
+        params = {
             "from": from_email,
-            "to": user_email,
+            "to": [user_email],
             "subject": "Verify Your Email - Resumaker",
             "html": html_content
-        })
+        }
+        resend.Emails.send(params)
         
         logger.info(f"Verification email sent to {user_email}")
         
@@ -91,6 +87,10 @@ def send_password_reset_email(user_email: str, user_name: str, otp: str) -> None
         user_name: User's first name
         otp: 6-digit OTP code
     """
+    if not RESEND_API_KEY:
+        logger.error("Resend API key not configured")
+        raise ValueError("RESEND_API_KEY must be configured")
+    
     # Use default from email if not configured (onboarding@resend.dev works for testing)
     from_email = RESEND_FROM_EMAIL if RESEND_FROM_EMAIL else "onboarding@resend.dev"
     
@@ -103,13 +103,13 @@ def send_password_reset_email(user_email: str, user_name: str, otp: str) -> None
         html_content = html_content.replace("{{otp}}", otp)
         
         # Send email using Resend
-        resend = get_resend_client()
-        resend.emails.send({
+        params = {
             "from": from_email,
-            "to": user_email,
+            "to": [user_email],
             "subject": "Reset Your Password - Resumaker",
             "html": html_content
-        })
+        }
+        resend.Emails.send(params)
         
         logger.info(f"Password reset email sent to {user_email}")
         
@@ -126,6 +126,10 @@ def send_email_change_otp(user_email: str, user_name: str, otp: str) -> None:
         user_name: User's first name
         otp: 6-digit OTP code
     """
+    if not RESEND_API_KEY:
+        logger.error("Resend API key not configured")
+        raise ValueError("RESEND_API_KEY must be configured")
+    
     # Use default from email if not configured (onboarding@resend.dev works for testing)
     from_email = RESEND_FROM_EMAIL if RESEND_FROM_EMAIL else "onboarding@resend.dev"
     
@@ -138,13 +142,13 @@ def send_email_change_otp(user_email: str, user_name: str, otp: str) -> None:
         html_content = html_content.replace("{{otp}}", otp)
         
         # Send email using Resend
-        resend = get_resend_client()
-        resend.emails.send({
+        params = {
             "from": from_email,
-            "to": user_email,
+            "to": [user_email],
             "subject": "Change Your Email - Resumaker",
             "html": html_content
-        })
+        }
+        resend.Emails.send(params)
         
         logger.info(f"Email change OTP email sent to {user_email}")
         
