@@ -3,67 +3,67 @@ from typing import List, Optional
 
 # Extraction Models for OpenAI Structured Output
 class ExtractedCustomLink(BaseModel):
-    label: str
-    url: str
+    label: Optional[str] = None
+    url: Optional[str] = None
 
 class ExtractedHeading(BaseModel):
     mobile: Optional[str] = None
     custom_links: List[ExtractedCustomLink] = []
 
 class ExtractedProjectItem(BaseModel):
-    title: str
-    description: str
+    title: Optional[str] = None
+    description: Optional[str] = None
 
 class ExtractedExperience(BaseModel):
-    company: str
-    location: str
-    position: str
-    start_date: str
-    end_date: str  # Can be "Present" or date
+    company: Optional[str] = None
+    location: Optional[str] = None
+    position: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None  # Can be "Present" or date
     projects: List[ExtractedProjectItem] = []
 
 class ExtractedProject(BaseModel):
-    name: str
-    start_date: str
-    end_date: str  # Can be "Present" or date
-    tech_stack: str
+    name: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None  # Can be "Present" or date
+    tech_stack: Optional[str] = None
     link: Optional[str] = None
     link_label: Optional[str] = None
     subpoints: List[str] = []
 
 class ExtractedEducation(BaseModel):
-    institution: str
-    location: str
-    degree: str
+    institution: Optional[str] = None
+    location: Optional[str] = None
+    degree: Optional[str] = None
     gpa: Optional[float] = None
     max_gpa: Optional[float] = None
-    start_date: str
-    end_date: str  # Can be "Present" or date
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None  # Can be "Present" or date
     courses: Optional[List[str]] = None
 
 class ExtractedSkill(BaseModel):
-    category: str  # "Languages", "Frameworks", "Tools", "Soft Skills"
-    items: List[str]
+    category: Optional[str] = None  # "Languages", "Frameworks", "Tools", "Soft Skills"
+    items: List[str] = []
 
 class ExtractedCertification(BaseModel):
-    title: str
-    start_date: str
-    end_date: str  # Can be "Present" or date
+    title: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None  # Can be "Present" or date
     instructor: Optional[str] = None
-    platform: str
+    platform: Optional[str] = None
     certification_link: Optional[str] = None
 
 class ExtractedAward(BaseModel):
-    title: str
-    date: str  # Can be month and year eg "Jan 2025"
+    title: Optional[str] = None
+    date: Optional[str] = None  # Can be month and year eg "Jan 2025"
 
 class ExtractedVolunteer(BaseModel):
-    position: str
-    organization: str
-    location: str
-    description: str
-    start_date: str
-    end_date: str  # Can be "Present" or date
+    position: Optional[str] = None
+    organization: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None  # Can be "Present" or date
 
 class ExtractedResumeData(BaseModel):
     heading: Optional[ExtractedHeading] = None
