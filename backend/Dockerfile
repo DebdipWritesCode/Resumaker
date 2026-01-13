@@ -3,6 +3,9 @@ FROM python:3.11-slim
 
 # Install system dependencies including TeX Live (LaTeX distribution for Linux)
 RUN apt-get update && apt-get install -y \
+    iputils-ping \
+    curl \
+    dnsutils \
     texlive-latex-base \
     texlive-latex-extra \
     texlive-fonts-recommended \

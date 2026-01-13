@@ -18,6 +18,10 @@ services:
     dns:
       - 8.8.8.8
       - 1.1.1.1
+    dns_search:
+      - .
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - app-network
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
