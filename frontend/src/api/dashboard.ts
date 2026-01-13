@@ -54,7 +54,14 @@ export interface DashboardResponse {
 
 export const dashboardApi = {
   getDashboard: async (): Promise<DashboardResponse> => {
-    const response = await api.get<DashboardResponse>('/api/dashboard')
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/13d595c5-7ea8-4818-ae0b-3caf225df095',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.ts:56',message:'Dashboard API call starting',data:{apiBaseURL:api.defaults.baseURL,protocol:typeof window !== 'undefined' ? window.location.protocol : 'N/A',href:typeof window !== 'undefined' ? window.location.href : 'N/A'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B,E'})}).catch(()=>{});
+    // #endregion
+    // Use trailing slash to match backend route and avoid 307 redirect from HTTPS to HTTP
+    const response = await api.get<DashboardResponse>('/api/dashboard/')
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/13d595c5-7ea8-4818-ae0b-3caf225df095',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.ts:60',message:'Dashboard API call succeeded',data:{status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B,E'})}).catch(()=>{});
+    // #endregion
     return response.data
   },
 }
