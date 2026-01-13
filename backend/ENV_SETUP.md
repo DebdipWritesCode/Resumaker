@@ -21,9 +21,9 @@ CLOUDINARY_API_SECRET=your-api-secret
 # OpenAI
 OPENAI_API_KEY=your-openai-api-key
 
-# Email (Gmail SMTP)
-SMTP_EMAIL=your-email@gmail.com
-SMTP_APP_PASSWORD=your-gmail-app-password
+# Email (Resend)
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=onboarding@yourdomain.com
 
 # Razorpay
 RAZORPAY_KEY_ID=your-razorpay-key-id
@@ -43,15 +43,16 @@ COOKIE_DOMAIN=localhost
 4. Get your connection string from the "Connect" button
 5. Replace `username`, `password`, and `cluster` in the connection string above
 
-## Gmail SMTP Setup
+## Resend Setup
 
-1. Go to your Google Account settings
-2. Enable 2-Step Verification (required for app passwords)
-3. Go to Security → 2-Step Verification → App passwords
-4. Generate a new app password for "Mail"
-5. Use your Gmail address for `SMTP_EMAIL` and the generated app password for `SMTP_APP_PASSWORD`
+1. Create an account at [Resend](https://resend.com/)
+2. Go to API Keys section in your dashboard
+3. Generate a new API key
+4. Use the API key for `RESEND_API_KEY`
+5. Verify your domain or use the default sender email in Resend dashboard
+6. Use a verified email address for `RESEND_FROM_EMAIL` (e.g., `noreply@yourdomain.com` or `onboarding@resend.dev` for testing)
 
-**Note**: Do not use your regular Gmail password. You must use an app-specific password.
+**Note**: The `RESEND_FROM_EMAIL` must be a verified sender email address in your Resend account. For testing, you can use `onboarding@resend.dev` which is available by default.
 
 ## Razorpay Setup
 

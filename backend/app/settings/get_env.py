@@ -27,9 +27,9 @@ CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
 # OpenAI
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 
-# Email (Gmail SMTP)
-SMTP_EMAIL: str = os.getenv("SMTP_EMAIL", "")
-SMTP_APP_PASSWORD: str = os.getenv("SMTP_APP_PASSWORD", "")
+# Email (Resend)
+RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+RESEND_FROM_EMAIL: str = os.getenv("RESEND_FROM_EMAIL", "")
 
 # Razorpay
 RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "")
@@ -54,8 +54,7 @@ if ENVIRONMENT == "prod":
         ("CLOUDINARY_API_KEY", CLOUDINARY_API_KEY),
         ("CLOUDINARY_API_SECRET", CLOUDINARY_API_SECRET),
         ("OPENAI_API_KEY", OPENAI_API_KEY),
-        ("SMTP_EMAIL", SMTP_EMAIL),
-        ("SMTP_APP_PASSWORD", SMTP_APP_PASSWORD),
+        ("RESEND_API_KEY", RESEND_API_KEY),
         ("RAZORPAY_KEY_ID", RAZORPAY_KEY_ID),
         ("RAZORPAY_KEY_SECRET", RAZORPAY_KEY_SECRET),
     ]

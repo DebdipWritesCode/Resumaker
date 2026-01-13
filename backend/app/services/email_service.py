@@ -1,17 +1,21 @@
-import smtplib
 import logging
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from pathlib import Path
-from app.settings.get_env import SMTP_EMAIL, SMTP_APP_PASSWORD
-
-import socket
-socket.setdefaulttimeout(20)
+from resend import Resend
+from app.settings.get_env import RESEND_API_KEY, RESEND_FROM_EMAIL
 
 logger = logging.getLogger(__name__)
 
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
+# Resend client will be initialized when needed
+_resend_client = None
+
+def get_resend_client():
+    """Get or create Resend client instance"""
+    global _resend_client
+    if _resend_client is None:
+        if not RESEND_API_KEY:
+            raise ValueError("RESEND_API_KEY must be configured")
+        _resend_client = Resend(api_key=RESEND_API_KEY)
+    return _resend_client
 
 def load_email_template() -> str:
     """Load the HTML email template"""
@@ -52,9 +56,8 @@ def send_verification_email(user_email: str, user_name: str, otp: str) -> None:
         user_name: User's first name
         otp: 6-digit OTP code
     """
-    if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
-        logger.error("SMTP credentials not configured")
-        raise ValueError("SMTP email and app password must be configured")
+    # Use default from email if not configured (onboarding@resend.dev works for testing)
+    from_email = RESEND_FROM_EMAIL if RESEND_FROM_EMAIL else "onboarding@resend.dev"
     
     try:
         # Load template
@@ -64,29 +67,17 @@ def send_verification_email(user_email: str, user_name: str, otp: str) -> None:
         html_content = template.replace("{{user_name}}", user_name)
         html_content = html_content.replace("{{otp}}", otp)
         
-        # Create message
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Verify Your Email - Resumaker"
-        msg["From"] = SMTP_EMAIL
-        msg["To"] = user_email
-        
-        # Create HTML part
-        html_part = MIMEText(html_content, "html")
-        msg.attach(html_part)
-        
-        # Send email
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
-            server.ehlo()            # REQUIRED on Railway
-            server.starttls()
-            server.ehlo()            # REQUIRED after STARTTLS
-            server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
-            server.send_message(msg)
+        # Send email using Resend
+        resend = get_resend_client()
+        resend.emails.send({
+            "from": from_email,
+            "to": user_email,
+            "subject": "Verify Your Email - Resumaker",
+            "html": html_content
+        })
         
         logger.info(f"Verification email sent to {user_email}")
         
-    except smtplib.SMTPException as e:
-        logger.error(f"SMTP error while sending verification email: {e}")
-        raise
     except Exception as e:
         logger.error(f"Failed to send verification email: {e}")
         raise
@@ -100,9 +91,8 @@ def send_password_reset_email(user_email: str, user_name: str, otp: str) -> None
         user_name: User's first name
         otp: 6-digit OTP code
     """
-    if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
-        logger.error("SMTP credentials not configured")
-        raise ValueError("SMTP email and app password must be configured")
+    # Use default from email if not configured (onboarding@resend.dev works for testing)
+    from_email = RESEND_FROM_EMAIL if RESEND_FROM_EMAIL else "onboarding@resend.dev"
     
     try:
         # Load template
@@ -112,29 +102,17 @@ def send_password_reset_email(user_email: str, user_name: str, otp: str) -> None
         html_content = template.replace("{{user_name}}", user_name)
         html_content = html_content.replace("{{otp}}", otp)
         
-        # Create message
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Reset Your Password - Resumaker"
-        msg["From"] = SMTP_EMAIL
-        msg["To"] = user_email
-        
-        # Create HTML part
-        html_part = MIMEText(html_content, "html")
-        msg.attach(html_part)
-        
-        # Send email
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
-            server.ehlo()            # REQUIRED on Railway
-            server.starttls()
-            server.ehlo()            # REQUIRED after STARTTLS
-            server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
-            server.send_message(msg)
+        # Send email using Resend
+        resend = get_resend_client()
+        resend.emails.send({
+            "from": from_email,
+            "to": user_email,
+            "subject": "Reset Your Password - Resumaker",
+            "html": html_content
+        })
         
         logger.info(f"Password reset email sent to {user_email}")
         
-    except smtplib.SMTPException as e:
-        logger.error(f"SMTP error while sending password reset email: {e}")
-        raise
     except Exception as e:
         logger.error(f"Failed to send password reset email: {e}")
         raise
@@ -148,9 +126,8 @@ def send_email_change_otp(user_email: str, user_name: str, otp: str) -> None:
         user_name: User's first name
         otp: 6-digit OTP code
     """
-    if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
-        logger.error("SMTP credentials not configured")
-        raise ValueError("SMTP email and app password must be configured")
+    # Use default from email if not configured (onboarding@resend.dev works for testing)
+    from_email = RESEND_FROM_EMAIL if RESEND_FROM_EMAIL else "onboarding@resend.dev"
     
     try:
         # Load template
@@ -160,29 +137,17 @@ def send_email_change_otp(user_email: str, user_name: str, otp: str) -> None:
         html_content = template.replace("{{user_name}}", user_name)
         html_content = html_content.replace("{{otp}}", otp)
         
-        # Create message
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Change Your Email - Resumaker"
-        msg["From"] = SMTP_EMAIL
-        msg["To"] = user_email
-        
-        # Create HTML part
-        html_part = MIMEText(html_content, "html")
-        msg.attach(html_part)
-        
-        # Send email
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
-            server.ehlo()            # REQUIRED on Railway
-            server.starttls()
-            server.ehlo()            # REQUIRED after STARTTLS
-            server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
-            server.send_message(msg)
+        # Send email using Resend
+        resend = get_resend_client()
+        resend.emails.send({
+            "from": from_email,
+            "to": user_email,
+            "subject": "Change Your Email - Resumaker",
+            "html": html_content
+        })
         
         logger.info(f"Email change OTP email sent to {user_email}")
         
-    except smtplib.SMTPException as e:
-        logger.error(f"SMTP error while sending email change OTP: {e}")
-        raise
     except Exception as e:
         logger.error(f"Failed to send email change OTP email: {e}")
         raise
