@@ -21,6 +21,14 @@ CLOUDINARY_API_SECRET=your-api-secret
 # OpenAI
 OPENAI_API_KEY=your-openai-api-key
 
+# Email (Gmail SMTP)
+SMTP_EMAIL=your-email@gmail.com
+SMTP_APP_PASSWORD=your-gmail-app-password
+
+# Razorpay
+RAZORPAY_KEY_ID=your-razorpay-key-id
+RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+
 # Application
 ENVIRONMENT=dev
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
@@ -35,9 +43,29 @@ COOKIE_DOMAIN=localhost
 4. Get your connection string from the "Connect" button
 5. Replace `username`, `password`, and `cluster` in the connection string above
 
+## Gmail SMTP Setup
+
+1. Go to your Google Account settings
+2. Enable 2-Step Verification (required for app passwords)
+3. Go to Security → 2-Step Verification → App passwords
+4. Generate a new app password for "Mail"
+5. Use your Gmail address for `SMTP_EMAIL` and the generated app password for `SMTP_APP_PASSWORD`
+
+**Note**: Do not use your regular Gmail password. You must use an app-specific password.
+
+## Razorpay Setup
+
+1. Create an account at [Razorpay](https://razorpay.com/)
+2. Go to Settings → API Keys
+3. Generate API keys (test keys for development, live keys for production)
+4. Use the Key ID for `RAZORPAY_KEY_ID` and Key Secret for `RAZORPAY_KEY_SECRET`
+
+**Note**: Use test keys during development. Switch to live keys only in production.
+
 ## Notes
 
 - For production, change `ENVIRONMENT=prod` and ensure all required variables are set
 - `CORS_ORIGINS` should be a comma-separated list of allowed frontend origins
 - `COOKIE_DOMAIN` should match your domain in production (e.g., `.yourdomain.com`)
 - MongoDB Atlas connection string format: `mongodb+srv://username:password@cluster.mongodb.net/database_name?retryWrites=true&w=majority`
+- All environment variables listed above are required for production. Some may be optional for development.
